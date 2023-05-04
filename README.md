@@ -1,7 +1,8 @@
 BCS Unity - The Basic Components an Systems pugin for Unity
 ===========================================
 
-This is the Unity plugin which handles generated BCS scripts. 
+This is the Unity plugin which handles generated BCS scripts.
+You can find the BCS code generator repository [Here](https://github.com/Clovergruff/BCS)
 
 Usage in Unity
 ==============
