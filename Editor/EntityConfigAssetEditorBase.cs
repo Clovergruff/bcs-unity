@@ -28,12 +28,21 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		iconButtonStyle.active.background = null;
 		iconButtonStyle.hover.background = null;
 
+		componentsProperty = serializedObject.FindProperty("components");
 		RegenerateEditors();
 	}
 
 	protected void DrawComponentList()
 	{
+		var previousComponentEditMode = componentEditMode;
 		componentEditMode = GUILayout.Toolbar (componentEditMode, componentEditModeStrings);
+
+		if (previousComponentEditMode != componentEditMode)
+		{
+			ApplyChanges();
+			RegenerateEditors();
+		}
+
 		switch (componentEditMode)
 		{
 			case 0:
@@ -179,6 +188,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	{
 		EditorUtility.SetDirty(entityConfigAsset);
 		serializedObject.ApplyModifiedProperties();
+		componentsProperty.serializedObject.Update();
 	}
 
 
@@ -196,7 +206,5 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 			editorInstance.editors[i] = Editor.CreateEditor(entityConfigAsset.components[i]);
 		}
-
-		componentsProperty = serializedObject.FindProperty("components");
 	}
 }
