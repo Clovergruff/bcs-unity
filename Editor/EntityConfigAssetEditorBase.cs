@@ -29,8 +29,6 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		iconButtonStyle.hover.background = null;
 
 		RegenerateEditors();
-
-		componentsProperty = serializedObject.FindProperty("components");
 	}
 
 	protected void DrawComponentList()
@@ -198,5 +196,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 			editorInstance.editors[i] = Editor.CreateEditor(entityConfigAsset.components[i]);
 		}
+
+		componentsProperty = serializedObject.FindProperty("components");
 	}
 }
