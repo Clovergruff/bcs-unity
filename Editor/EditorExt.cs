@@ -6,6 +6,10 @@ using UnityEngine;
 public static class EditorExt
 {
 	private const int INDENTATION_WIDTH = 16;
+	private static GUIStyle OBJECT_FIELD_PREVIEW_STYLE = new GUIStyle(GUI.skin.button)
+		{
+			padding = new RectOffset(2, 2, 2, 2)
+		};
 
 	private static List<int> indentations = new List<int>();
 
@@ -94,5 +98,34 @@ public static class EditorExt
 		}
 
 		return (T)obj;
+	}
+
+	public static T ObjectFieldWithPreview<T>(T obj, float previewSize) where T : UnityEngine.Object
+	{
+		if (obj != null)
+		{
+			GameObject go = (GameObject)obj.GetType().GetProperty("gameObject").GetValue(obj, null);
+			return ObjectFieldWithPreview<T>(obj, AssetPreview.GetAssetPreview(go), previewSize); 
+		}
+		return ObjectFieldWithPreview<T>(obj, null, previewSize); 
+	}
+
+	public static T ObjectFieldWithPreview<T>(T obj, Texture2D previewTexture, float previewSize) where T : UnityEngine.Object
+	{
+		GUILayout.BeginHorizontal();
+
+		if (previewTexture != null)
+		{
+			if (GUILayout.Button(previewTexture, OBJECT_FIELD_PREVIEW_STYLE, GUILayout.Width(previewSize), GUILayout.Height(previewSize)))
+			{
+				EditorGUIUtility.PingObject(obj);
+			}
+		}
+
+		obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), false, GUILayout.Height(previewSize));
+
+		GUILayout.EndHorizontal();
+
+		return obj;
 	}
 }

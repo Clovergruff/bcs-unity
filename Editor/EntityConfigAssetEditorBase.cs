@@ -16,9 +16,9 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 	public EntityConfigEditorInstance editorInstance;
 
-	private static int componentEditMode = 0;
-	private string[] componentEditModeStrings = new string[] {"Edit mode", "Reorder mode"};
-	private SerializedProperty componentsProperty;
+	private static int _componentEditMode = 0;
+	private string[] _componentEditModeStrings = new string[] {"Edit mode", "Reorder mode"};
+	private SerializedProperty _componentsProperty;
 
 	protected virtual void OnEnable()
 	{
@@ -28,22 +28,24 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		iconButtonStyle.active.background = null;
 		iconButtonStyle.hover.background = null;
 
-		componentsProperty = serializedObject.FindProperty("components");
+		_componentsProperty = serializedObject.FindProperty("components");
 		RegenerateEditors();
 	}
 
 	protected void DrawComponentList()
 	{
-		var previousComponentEditMode = componentEditMode;
-		componentEditMode = GUILayout.Toolbar (componentEditMode, componentEditModeStrings);
+		var previousComponentEditMode = _componentEditMode;
+		_componentEditMode = GUILayout.Toolbar (_componentEditMode, _componentEditModeStrings);
 
-		if (previousComponentEditMode != componentEditMode)
+		if (previousComponentEditMode != _componentEditMode)
 		{
 			ApplyChanges();
 			RegenerateEditors();
 		}
 
-		switch (componentEditMode)
+		Repaint();
+
+		switch (_componentEditMode)
 		{
 			case 0:
 				float oneLineHeight = EditorGUIUtility.singleLineHeight;
@@ -56,6 +58,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 					EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
 						{
+							EditorExt.BeginBoxGroup();
 							Editor editor = editorInstance.editors[i];
 
 							using (var check = new EditorGUI.ChangeCheckScope())
@@ -65,9 +68,10 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 									int oldIndentLevel = EditorGUI.indentLevel;
 									bool canBeFoldedOut = false;
+									bool nullComponent = entityConfigAsset.components[i] == null;
 									EditorGUI.indentLevel = 0;
 
-									if (entityConfigAsset.components[i] != null)
+									if (!nullComponent)
 									{
 										var iterator = editor.serializedObject.GetIterator();
 										if (entityConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
@@ -88,9 +92,15 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 									}
 
 									if (!canBeFoldedOut)
-										GUILayout.Space(FOLDOUT_WIDTH + 3);						
+										GUILayout.Space(FOLDOUT_WIDTH + 3);
 
-									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false);
+									if (!nullComponent)
+									{
+										if (GUILayout.Button(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true)))
+											entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+									}
+
+									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true));
 
 									if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.Height(oneLineHeight)))
 									{
@@ -99,7 +109,8 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 										return;
 									}
 									EditorGUI.indentLevel = oldIndentLevel;
-
+									
+									GUI.color = Color.white;
 								GUILayout.EndHorizontal();
 								
 								GUILayout.Space(2);
@@ -113,11 +124,11 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 								// Component Editor
 								if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut)
 								{
-									EditorExt.BeginBoxGroup();
+									// EditorExt.BeginBoxGroup();
 									EditorGUI.indentLevel++;
 										editor.OnInspectorGUI();
 									EditorGUI.indentLevel--;
-									EditorExt.EndBoxGroup();
+									// EditorExt.EndBoxGroup();
 								}
 
 								if (i != editorCount -1)
@@ -126,6 +137,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 								if (check.changed)
 									ApplyChanges();
 							}
+							EditorExt.EndBoxGroup();
 						}
 
 						GUILayout.Space(3);
@@ -179,16 +191,18 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 				}
 			break;
 			case 1:
-				EditorGUILayout.PropertyField(componentsProperty);
+				EditorGUILayout.PropertyField(_componentsProperty);
 			break;
 		}
+
+		GUI.color = Color.white;
 	}
 
 	private void ApplyChanges()
 	{
 		EditorUtility.SetDirty(entityConfigAsset);
 		serializedObject.ApplyModifiedProperties();
-		componentsProperty.serializedObject.Update();
+		_componentsProperty.serializedObject.Update();
 	}
 
 
