@@ -69,8 +69,10 @@ public static class EditorExt
 		return foldout;
 	}
 
-	public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor) where T : Object
+	public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
 	{
+		BeginBoxGroup();
+
 		EditorGUILayout.BeginHorizontal();
 			foldout = FoldoutHeader(label, foldout);
 			obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
@@ -90,12 +92,13 @@ public static class EditorExt
 				}
 				else
 				{
-					BeginBoxGroup();
+					EditorGUI.indentLevel += indentAmount;
 						objEditor.OnInspectorGUI();
-					EndBoxGroup();
+					EditorGUI.indentLevel -= indentAmount;
 				}
 			}
 		}
+		EndBoxGroup();
 
 		return (T)obj;
 	}
