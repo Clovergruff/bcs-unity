@@ -43,8 +43,6 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 			RegenerateEditors();
 		}
 
-		Repaint();
-
 		switch (_componentEditMode)
 		{
 			case 0:
@@ -130,9 +128,6 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 									EditorGUI.indentLevel--;
 									// EditorExt.EndBoxGroup();
 								}
-
-								if (i != editorCount -1)
-									GUILayout.Space(5);
 
 								if (check.changed)
 									ApplyChanges();

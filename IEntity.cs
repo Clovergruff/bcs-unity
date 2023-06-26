@@ -4,15 +4,15 @@ public interface IEntity
 
 public interface IEntityUpdate
 {
-	public void OnUpdate();
+	public abstract void OnUpdate();
 }
 
 public interface IEntityLateUpdate
 {
-	public void OnLateUpdate();
+	public abstract void OnLateUpdate();
 }
 
 public interface IEntityFixedUpdate
 {
-	public void OnFixedUpdate();
+	public abstract void OnFixedUpdate();
 }
