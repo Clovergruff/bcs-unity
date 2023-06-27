@@ -9,6 +9,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	where T2 : EntityConfigAsset<T1>
 {
 	private const int FOLDOUT_WIDTH = 13;
+	private readonly Color COMPONENT_EVEN_ID_COLOR = new Color(0.8f, 0.8f, 0.8f, 1);
 
 	protected T2 entityConfigAsset;
 	protected GUIStyle iconButtonStyle = new GUIStyle();
@@ -56,6 +57,9 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 					EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
 						{
+							if (i % 2 == 0)
+								GUI.backgroundColor = COMPONENT_EVEN_ID_COLOR;
+
 							EditorExt.BeginBoxGroup();
 							Editor editor = editorInstance.editors[i];
 
@@ -79,12 +83,12 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 											if (!entityConfigAsset.components[i].foldedOut)
 											{
 												EditorGUI.BeginDisabledGroup(false);
-													entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH));
+													entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
 												EditorGUI.EndDisabledGroup();
 											}
 											else
 											{
-												entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH));
+												entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
 											}
 										}
 									}
@@ -94,13 +98,49 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 									if (!nullComponent)
 									{
-										if (GUILayout.Button(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true)))
-											entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+										GUILayout.Label(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true));
+
+										// if (GUILayout.Button(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true)))
+										// 	entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+
+										Rect buttonRect = GUILayoutUtility.GetLastRect();
+										Event current = Event.current;
+
+										if (buttonRect.Contains(current.mousePosition))
+										{
+											if (current.type == EventType.MouseDown && current.button == 0)
+											{
+												if (canBeFoldedOut)
+													entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+											}
+											else if (current.type == EventType.ContextClick)
+											{
+												GenericMenu menu = new GenericMenu();
+
+												if (i == 0)
+													menu.AddDisabledItem(new GUIContent("Move Up"), false);
+												else
+													menu.AddItem(new GUIContent("Move Up"), false, OnMenuMoveComponentUp, i);
+
+												if (i == editorCount - 1)
+													menu.AddDisabledItem(new GUIContent("Move Down"), false);
+												else
+													menu.AddItem(new GUIContent("Move Down"), false, OnMenuMoveComponentDown, i);
+
+												// menu.AddSeparator("");
+												// menu.AddItem(new GUIContent("Select Asset"), false, OnMenuSelectComponentAsset, i);
+												menu.AddSeparator("");
+												menu.AddItem(new GUIContent("Remove Component"), false, OnMenuRemoveComponent, i);
+												menu.ShowAsContext();
+
+												current.Use(); 
+											}
+										}
 									}
 
-									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true));
+									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(oneLineHeight));
 
-									if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.Height(oneLineHeight)))
+									if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 									{
 										entityConfigAsset.components.RemoveAt(i);
 										RegenerateEditors();
@@ -133,6 +173,8 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 									ApplyChanges();
 							}
 							EditorExt.EndBoxGroup();
+
+							GUI.backgroundColor = Color.white;
 						}
 
 						GUILayout.Space(3);
@@ -193,13 +235,45 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		GUI.color = Color.white;
 	}
 
+	private void OnMenuMoveComponentDown(object userData)
+	{
+		var index = (int)userData;
+		if (index == entityConfigAsset.components.Count - 1)
+			return;
+
+		MoveListItem(ref entityConfigAsset.components, index, index + 1);
+		RegenerateEditors();
+	}
+
+	private void OnMenuMoveComponentUp(object userData)
+	{
+		var index = (int)userData;
+		if (index == 0)
+			return;
+
+		MoveListItem(ref entityConfigAsset.components, index, index - 1);
+		RegenerateEditors();
+	}
+
+	private void OnMenuRemoveComponent(object userData)
+	{
+		var index = (int)userData;
+		entityConfigAsset.components.RemoveAt(index);
+		RegenerateEditors();
+	}
+	
+	private void OnMenuSelectComponentAsset(object userData)
+	{
+		var index = (int)userData;
+		Selection.activeObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GetAssetPath(entityConfigAsset.components[index]));
+	}
+
 	private void ApplyChanges()
 	{
 		EditorUtility.SetDirty(entityConfigAsset);
 		serializedObject.ApplyModifiedProperties();
 		_componentsProperty.serializedObject.Update();
 	}
-
 
 	private void RegenerateEditors()
 	{
@@ -215,5 +289,12 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 			editorInstance.editors[i] = Editor.CreateEditor(entityConfigAsset.components[i]);
 		}
+	}
+
+	public void MoveListItem<T>(ref List<T> list, int oldIndex, int newIndex)
+	{
+		T item = list[oldIndex];
+		list.RemoveAt(oldIndex);
+		list.Insert(newIndex, item);
 	}
 }

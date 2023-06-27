@@ -117,6 +117,9 @@ public static class EditorExt
 	{
 		GUILayout.BeginHorizontal();
 
+		int oldIndentLevel = EditorGUI.indentLevel;
+		EditorGUI.indentLevel = 0;
+
 		if (previewTexture != null)
 		{
 			if (GUILayout.Button(previewTexture, OBJECT_FIELD_PREVIEW_STYLE, GUILayout.Width(previewSize), GUILayout.Height(previewSize)))
@@ -126,6 +129,8 @@ public static class EditorExt
 		}
 
 		obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), false, GUILayout.Height(previewSize));
+
+		EditorGUI.indentLevel = oldIndentLevel;
 
 		GUILayout.EndHorizontal();
 
