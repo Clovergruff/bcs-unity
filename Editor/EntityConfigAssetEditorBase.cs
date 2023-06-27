@@ -9,7 +9,9 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	where T2 : EntityConfigAsset<T1>
 {
 	private const int FOLDOUT_WIDTH = 13;
-	private readonly Color COMPONENT_EVEN_ID_COLOR = new Color(0.8f, 0.8f, 0.8f, 1);
+	private readonly Color HEADER_EVEN_ID_COLOR = new Color(0, 0, 0, 0.1f);
+	private readonly Color HEADER_HOVER_COLOR = new Color(1, 1, 1, 0.05f);
+	private readonly Color HEADER_SELECTED_COLOR = new Color(0, 0.4f, 1, 0.25f);
 
 	protected T2 entityConfigAsset;
 	protected GUIStyle iconButtonStyle = new GUIStyle();
@@ -20,6 +22,10 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	private static int _componentEditMode = 0;
 	private string[] _componentEditModeStrings = new string[] {"Edit mode", "Reorder mode"};
 	private SerializedProperty _componentsProperty;
+	private float _headerHeight = 20;
+	private Rect[] _headerRects;
+	private int _hoveringComponentId = -1;
+	private int _selectedComponentId = -1;
 
 	protected virtual void OnEnable()
 	{
@@ -35,6 +41,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 	protected void DrawComponentList()
 	{
+		bool wasHoveringOnComponent = false;
 		var previousComponentEditMode = _componentEditMode;
 		_componentEditMode = GUILayout.Toolbar (_componentEditMode, _componentEditModeStrings);
 
@@ -57,15 +64,31 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 					EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
 						{
-							if (i % 2 == 0)
-								GUI.backgroundColor = COMPONENT_EVEN_ID_COLOR;
-
-							EditorExt.BeginBoxGroup();
+							// EditorExt.BeginBoxGroup();
+							EditorGUI.indentLevel++;
 							Editor editor = editorInstance.editors[i];
 
 							using (var check = new EditorGUI.ChangeCheckScope())
 							{
 								// Header
+								Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(_headerHeight));
+								Rect headerSelectRect = headerRect;
+								headerSelectRect.x -= 3;
+								// headerSelectRect.y -= 2;
+								headerSelectRect.width += 6;
+								// headerSelectRect.height += 6;
+
+								if (Event.current.type == EventType.Repaint)
+        							_headerRects[i] = headerRect;
+
+								if (_selectedComponentId == i)
+									EditorGUI.DrawRect(headerSelectRect, HEADER_SELECTED_COLOR);
+								else if (_hoveringComponentId == i)
+									EditorGUI.DrawRect(headerSelectRect, HEADER_HOVER_COLOR);
+								else if (i % 2 == 0)
+									EditorGUI.DrawRect(headerSelectRect, HEADER_EVEN_ID_COLOR);
+
+								GUILayout.BeginArea(_headerRects[i]);
 								GUILayout.BeginHorizontal();
 
 									int oldIndentLevel = EditorGUI.indentLevel;
@@ -75,26 +98,20 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 									if (!nullComponent)
 									{
+										EditorGUI.BeginDisabledGroup(true);
 										var iterator = editor.serializedObject.GetIterator();
 										if (entityConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
 										{
 											canBeFoldedOut = true;
-
-											if (!entityConfigAsset.components[i].foldedOut)
-											{
-												EditorGUI.BeginDisabledGroup(false);
-													entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
-												EditorGUI.EndDisabledGroup();
-											}
-											else
-											{
-												entityConfigAsset.components[i].foldedOut = EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
-											}
+											EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
 										}
+										EditorGUI.EndDisabledGroup();
 									}
 
+									float leftPadding = FOLDOUT_WIDTH + 3;
+
 									if (!canBeFoldedOut)
-										GUILayout.Space(FOLDOUT_WIDTH + 3);
+										GUILayout.Space(leftPadding);
 
 									if (!nullComponent)
 									{
@@ -104,16 +121,24 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 										// 	entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
 
 										Rect buttonRect = GUILayoutUtility.GetLastRect();
+										buttonRect.x -= leftPadding;
+										buttonRect.width += leftPadding;
 										Event current = Event.current;
+										var eventType = current.type;
 
 										if (buttonRect.Contains(current.mousePosition))
 										{
-											if (current.type == EventType.MouseDown && current.button == 0)
+											wasHoveringOnComponent = true;
+											_hoveringComponentId = i;
+											
+											if (eventType == EventType.MouseDown && current.button == 0)
 											{
 												if (canBeFoldedOut)
 													entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+
+												_selectedComponentId = i;
 											}
-											else if (current.type == EventType.ContextClick)
+											else if (eventType == EventType.ContextClick)
 											{
 												GenericMenu menu = new GenericMenu();
 
@@ -138,7 +163,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 										}
 									}
 
-									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(oneLineHeight));
+									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(_headerHeight));
 
 									if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 									{
@@ -150,6 +175,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 									
 									GUI.color = Color.white;
 								GUILayout.EndHorizontal();
+								GUILayout.EndArea();
 								
 								GUILayout.Space(2);
 
@@ -172,9 +198,9 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 								if (check.changed)
 									ApplyChanges();
 							}
-							EditorExt.EndBoxGroup();
 
-							GUI.backgroundColor = Color.white;
+							EditorGUI.indentLevel--;
+							// EditorExt.EndBoxGroup();
 						}
 
 						GUILayout.Space(3);
@@ -194,6 +220,11 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 						GUILayout.Space(3);
 
 					EditorExt.EndBoxGroup();
+				}
+
+				if (_hoveringComponentId == -1 && Event.current.type == EventType.MouseDown)
+				{
+					_selectedComponentId = -1;
 				}
 
 				// Drag items from the assets window
@@ -233,6 +264,11 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		}
 
 		GUI.color = Color.white;
+
+		if (!wasHoveringOnComponent && Event.current.type == EventType.Repaint)
+			_hoveringComponentId = -1;
+
+		Repaint();
 	}
 
 	private void OnMenuMoveComponentDown(object userData)
@@ -242,6 +278,8 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 			return;
 
 		MoveListItem(ref entityConfigAsset.components, index, index + 1);
+		_selectedComponentId = index + 1;
+
 		RegenerateEditors();
 	}
 
@@ -252,6 +290,8 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 			return;
 
 		MoveListItem(ref entityConfigAsset.components, index, index - 1);
+		_selectedComponentId = index - 1;
+
 		RegenerateEditors();
 	}
 
@@ -281,6 +321,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 		int editorCount = entityConfigAsset.components.Count;
 		editorInstance.editors = new Editor[editorCount];
+		_headerRects = new Rect[editorCount];
 
 		for (int i = 0; i < editorCount; i++)
 		{

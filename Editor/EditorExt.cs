@@ -5,7 +5,7 @@ using UnityEngine;
 
 public static class EditorExt
 {
-	private const int INDENTATION_WIDTH = 16;
+	public static int INDENTATION_WIDTH = 16;
 	private static GUIStyle OBJECT_FIELD_PREVIEW_STYLE = new GUIStyle(GUI.skin.button)
 		{
 			padding = new RectOffset(2, 2, 2, 2)
@@ -71,9 +71,8 @@ public static class EditorExt
 
 	public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
 	{
-		BeginBoxGroup();
-
 		EditorGUILayout.BeginHorizontal();
+			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
 			foldout = FoldoutHeader(label, foldout);
 			obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
 		EditorGUILayout.EndHorizontal();
@@ -92,13 +91,14 @@ public static class EditorExt
 				}
 				else
 				{
+					BeginBoxGroup();
 					EditorGUI.indentLevel += indentAmount;
 						objEditor.OnInspectorGUI();
 					EditorGUI.indentLevel -= indentAmount;
+					EndBoxGroup();
 				}
 			}
 		}
-		EndBoxGroup();
 
 		return (T)obj;
 	}
@@ -116,6 +116,7 @@ public static class EditorExt
 	public static T ObjectFieldWithPreview<T>(T obj, Texture2D previewTexture, float previewSize) where T : UnityEngine.Object
 	{
 		GUILayout.BeginHorizontal();
+		GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH);
 
 		int oldIndentLevel = EditorGUI.indentLevel;
 		EditorGUI.indentLevel = 0;
