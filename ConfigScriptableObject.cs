@@ -1,11 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.AnimatedValues;
 using UnityEngine;
 
 public abstract class ConfigScriptableObject : ScriptableObject
 {
 	public virtual bool alwaysEnableFoldout {get;}
-	public bool foldedOut {get; set;}
+	[HideInInspector] public AnimBool foldedOut = new AnimBool
+	{
+		speed = 10f,
+	};
 
 	public static bool IsComponentNull(ScriptableObject stackObject, ConfigScriptableObject configScriptableObject)
 	{

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.AnimatedValues;
 using UnityEngine;
 
 public static class EditorExt
@@ -53,23 +54,23 @@ public static class EditorExt
 		indentations.RemoveAt(lastIndex);
 	}
 
-	public static bool FoldoutHeader(string label, bool foldout)
+	public static AnimBool FoldoutHeader(string label, AnimBool foldout)
 	{
-		if (foldout)
+		if (foldout.target)
 		{
-			foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+			foldout.target = GUILayout.Toggle(foldout.target, label, EditorStyles.foldoutHeader);
 		}
 		else
 		{
 			EditorGUI.BeginDisabledGroup(false);
-				foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+				foldout.target = GUILayout.Toggle(foldout.target, label, EditorStyles.foldoutHeader);
 			EditorGUI.EndDisabledGroup();
 		}
 
 		return foldout;
 	}
 
-	public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
+	public static T FoldoutObject<T>(string label, ref AnimBool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
 	{
 		EditorGUILayout.BeginHorizontal();
 			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
@@ -77,7 +78,7 @@ public static class EditorExt
 			obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
 		EditorGUILayout.EndHorizontal();
 
-		if (foldout)
+		if (EditorGUILayout.BeginFadeGroup(foldout.faded))
 		{
 			if (obj == null)
 			{
@@ -99,6 +100,7 @@ public static class EditorExt
 				}
 			}
 		}
+		EditorGUILayout.EndFadeGroup();
 
 		return (T)obj;
 	}
@@ -136,5 +138,13 @@ public static class EditorExt
 		GUILayout.EndHorizontal();
 
 		return obj;
+	}
+
+	public static void LabelFieldColor(Color color, GUIContent label, params GUILayoutOption[] options)
+	{
+		var oldColor = GUI.color;
+		GUI.color = color;
+		EditorGUILayout.LabelField(label, options);
+		GUI.color = oldColor;
 	}
 }

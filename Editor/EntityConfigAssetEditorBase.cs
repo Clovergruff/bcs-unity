@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
+using UnityEditor.AnimatedValues;
 
 public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	where T1 : ConfigScriptableObject
@@ -10,8 +11,10 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 {
 	private const int FOLDOUT_WIDTH = 13;
 	private readonly Color HEADER_EVEN_ID_COLOR = new Color(0, 0, 0, 0.1f);
+	private readonly Color HEADER_ODD_ID_COLOR = new Color(0, 0, 0, 0.05f);
 	private readonly Color HEADER_HOVER_COLOR = new Color(1, 1, 1, 0.05f);
 	private readonly Color HEADER_SELECTED_COLOR = new Color(0, 0.4f, 1, 0.25f);
+	private readonly Color DARK_ICON_COLOR = new Color(0.9f, 0.9f, 0.9f, 1);
 
 	protected T2 entityConfigAsset;
 	protected GUIStyle iconButtonStyle = new GUIStyle();
@@ -22,10 +25,10 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 	private static int _componentEditMode = 0;
 	private string[] _componentEditModeStrings = new string[] {"Edit mode", "Reorder mode"};
 	private SerializedProperty _componentsProperty;
-	private float _headerHeight = 20;
+	private float _headerHeight = 18;
 	private Rect[] _headerRects;
 	private int _hoveringComponentId = -1;
-	private int _selectedComponentId = -1;
+	private bool[] _selectedComponents;
 
 	protected virtual void OnEnable()
 	{
@@ -37,6 +40,16 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 		_componentsProperty = serializedObject.FindProperty("components");
 		RegenerateEditors();
+	}
+
+	private void OnGUI()
+	{
+		Event e = Event.current;
+		if (_hoveringComponentId == -1 && e.type == EventType.MouseDown)
+		{
+			for (int i = 0; i < _selectedComponents.Length; i++)
+				_selectedComponents[i] = false;
+		}
 	}
 
 	protected void DrawComponentList()
@@ -59,7 +72,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 				entityConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", entityConfigAsset.foldedOut);
 
-				if (entityConfigAsset.foldedOut)
+				if (EditorGUILayout.BeginFadeGroup(entityConfigAsset.foldedOut.faded))
 				{
 					EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
@@ -74,19 +87,21 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 								Rect headerRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandWidth(true), GUILayout.Height(_headerHeight));
 								Rect headerSelectRect = headerRect;
 								headerSelectRect.x -= 3;
-								// headerSelectRect.y -= 2;
+								headerSelectRect.y -= 1;
 								headerSelectRect.width += 6;
-								// headerSelectRect.height += 6;
+								headerSelectRect.height += 2;
 
 								if (Event.current.type == EventType.Repaint)
         							_headerRects[i] = headerRect;
 
-								if (_selectedComponentId == i)
+								if (_selectedComponents[i])
 									EditorGUI.DrawRect(headerSelectRect, HEADER_SELECTED_COLOR);
 								else if (_hoveringComponentId == i)
 									EditorGUI.DrawRect(headerSelectRect, HEADER_HOVER_COLOR);
 								else if (i % 2 == 0)
 									EditorGUI.DrawRect(headerSelectRect, HEADER_EVEN_ID_COLOR);
+								else
+									EditorGUI.DrawRect(headerSelectRect, HEADER_ODD_ID_COLOR);
 
 								GUILayout.BeginArea(_headerRects[i]);
 								GUILayout.BeginHorizontal();
@@ -103,7 +118,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 										if (entityConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
 										{
 											canBeFoldedOut = true;
-											EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
+											EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut.target, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.ExpandHeight(true));
 										}
 										EditorGUI.EndDisabledGroup();
 									}
@@ -113,59 +128,101 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 									if (!canBeFoldedOut)
 										GUILayout.Space(leftPadding);
 
-									if (!nullComponent)
+									if (nullComponent)
 									{
-										GUILayout.Label(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true));
-
-										// if (GUILayout.Button(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(150), GUILayout.ExpandHeight(true)))
-										// 	entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
-
-										Rect buttonRect = GUILayoutUtility.GetLastRect();
-										buttonRect.x -= leftPadding;
-										buttonRect.width += leftPadding;
-										Event current = Event.current;
-										var eventType = current.type;
-
-										if (buttonRect.Contains(current.mousePosition))
-										{
-											wasHoveringOnComponent = true;
-											_hoveringComponentId = i;
+										EditorGUILayout.LabelField(EditorGUIUtility.IconContent("Warning@2x"), GUILayout.Width(25), GUILayout.ExpandHeight(true));
+									}
+									else
+									{
+										if (EditorGUIUtility.isProSkin)
+											EditorGUILayout.LabelField(EditorGUIUtility.IconContent("d_ScriptableObject On Icon"), GUILayout.Width(18), GUILayout.ExpandHeight(true));
+										else
+											EditorExt.LabelFieldColor(new Color(0, 0, 0, 0.5f), EditorGUIUtility.IconContent("ScriptableObject On Icon"), GUILayout.Width(18), GUILayout.ExpandHeight(true));
 											
-											if (eventType == EventType.MouseDown && current.button == 0)
+										GUILayout.Label(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(250), GUILayout.ExpandHeight(true));
+									}
+
+									var buttonRect = GUILayoutUtility.GetLastRect();
+									var xMax = buttonRect.xMax;
+									buttonRect.x = _headerRects[i].x - 25;
+									buttonRect.xMax = xMax;
+									buttonRect.y -= 1;
+									buttonRect.height += 2;
+
+									Event current = Event.current;
+									var eventType = current.type;
+
+									if (buttonRect.Contains(current.mousePosition))
+									{
+										wasHoveringOnComponent = true;
+										_hoveringComponentId = i;
+
+										if (eventType == EventType.MouseDown && current.button == 0)
+										{
+											if (current.control)
 											{
-												if (canBeFoldedOut)
-													entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
-
-												_selectedComponentId = i;
+												_selectedComponents[i] = !_selectedComponents[i];
 											}
-											else if (eventType == EventType.ContextClick)
+											else
 											{
-												GenericMenu menu = new GenericMenu();
-
-												if (i == 0)
-													menu.AddDisabledItem(new GUIContent("Move Up"), false);
+												if (canBeFoldedOut && !nullComponent)
+												{
+													if (current.clickCount > 1 || current.mousePosition.x < buttonRect.x + leftPadding)
+														ToggleComponentFoldout(i);
+													else
+														HighlightSpecificComponent(i);
+												}
 												else
-													menu.AddItem(new GUIContent("Move Up"), false, OnMenuMoveComponentUp, i);
-
-												if (i == editorCount - 1)
-													menu.AddDisabledItem(new GUIContent("Move Down"), false);
-												else
-													menu.AddItem(new GUIContent("Move Down"), false, OnMenuMoveComponentDown, i);
-
-												// menu.AddSeparator("");
-												// menu.AddItem(new GUIContent("Select Asset"), false, OnMenuSelectComponentAsset, i);
-												menu.AddSeparator("");
-												menu.AddItem(new GUIContent("Remove Component"), false, OnMenuRemoveComponent, i);
-												menu.ShowAsContext();
-
-												current.Use(); 
+													HighlightSpecificComponent(i);
 											}
+										}
+										else if (eventType == EventType.ContextClick)
+										{
+											GenericMenu menu = new GenericMenu();
+											int selectedComponentCount = 0;
+											foreach (var sel in _selectedComponents)
+												if (sel) selectedComponentCount++;
+
+											if (i == 0 || selectedComponentCount > 1)
+												menu.AddDisabledItem(new GUIContent("Move Up"), false);
+											else
+												menu.AddItem(new GUIContent("Move Up"), false, OnMenuMoveComponentUp, i);
+
+											if (i == editorCount - 1 || selectedComponentCount > 1)
+												menu.AddDisabledItem(new GUIContent("Move Down"), false);
+											else
+												menu.AddItem(new GUIContent("Move Down"), false, OnMenuMoveComponentDown, i);
+
+											// menu.AddSeparator("");
+											// menu.AddItem(new GUIContent("Select Asset"), false, OnMenuSelectComponentAsset, i);
+											menu.AddSeparator("");
+											if (selectedComponentCount > 1)
+												menu.AddItem(new GUIContent("Remove Components"), false, OnMenuRemoveSelectedComponents);
+											else
+												menu.AddItem(new GUIContent("Remove Component"), false, OnMenuRemoveSelectedComponents);
+											menu.ShowAsContext();
+
+											current.Use(); 
 										}
 									}
 
 									entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(_headerHeight));
 
-									if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
+									// if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
+									GUILayout.Label("", GUILayout.MaxWidth(10), GUILayout.Height(_headerHeight));
+									Rect closeButtonRect = GUILayoutUtility.GetLastRect();
+									var closeImage = EditorGUIUtility.isProSkin
+										? EditorGUIUtility.IconContent("d_winbtn_win_close").image
+										: EditorGUIUtility.IconContent("winbtn_win_close").image;
+									closeButtonRect.x -= 4;
+									closeButtonRect.y = _headerHeight * 0.5f - closeImage.height * 0.5f;
+									closeButtonRect.width = closeImage.width;
+									closeButtonRect.height = closeImage.height;
+
+									GUI.DrawTexture(closeButtonRect, closeImage);
+									// GUI.Label(closeButtonRect, EditorGUIUtility.IconContent("d_winbtn_win_close_a@2x"));
+									// if (GUILayout.Button("EditorGUIUtility.IconContent("d_winbtn_win_close_a@2x")", GUIStyle.none, GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
+									if (GUI.Button(closeButtonRect, "", GUIStyle.none))
 									{
 										entityConfigAsset.components.RemoveAt(i);
 										RegenerateEditors();
@@ -186,13 +243,18 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 								}
 
 								// Component Editor
-								if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut)
+								if (entityConfigAsset.components[i] != null)
 								{
-									// EditorExt.BeginBoxGroup();
-									EditorGUI.indentLevel++;
-										editor.OnInspectorGUI();
-									EditorGUI.indentLevel--;
-									// EditorExt.EndBoxGroup();
+									// if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut.)
+									if (EditorGUILayout.BeginFadeGroup(entityConfigAsset.components[i].foldedOut.faded))
+									{
+										// EditorExt.BeginBoxGroup();
+										EditorGUI.indentLevel++;
+											editor.OnInspectorGUI();
+										EditorGUI.indentLevel--;
+										// EditorExt.EndBoxGroup();
+									}
+									EditorGUILayout.EndFadeGroup();
 								}
 
 								if (check.changed)
@@ -221,10 +283,12 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 
 					EditorExt.EndBoxGroup();
 				}
+				EditorGUILayout.EndFadeGroup();
 
 				if (_hoveringComponentId == -1 && Event.current.type == EventType.MouseDown)
 				{
-					_selectedComponentId = -1;
+					for (int i = 0; i < _selectedComponents.Length; i++)
+						_selectedComponents[i] = false;
 				}
 
 				// Drag items from the assets window
@@ -271,6 +335,14 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		Repaint();
 	}
 
+	private void HighlightSpecificComponent(int index)
+	{
+		for (int i = 0; i < _selectedComponents.Length; i++)
+			_selectedComponents[i] = index == i;
+	}
+
+	private void ToggleComponentFoldout(int i) => entityConfigAsset.components[i].foldedOut.target = !entityConfigAsset.components[i].foldedOut.target;
+
 	private void OnMenuMoveComponentDown(object userData)
 	{
 		var index = (int)userData;
@@ -278,7 +350,8 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 			return;
 
 		MoveListItem(ref entityConfigAsset.components, index, index + 1);
-		_selectedComponentId = index + 1;
+		for (int i = 0; i < _selectedComponents.Length; i++)
+			_selectedComponents[i] = i == index + 1; 
 
 		RegenerateEditors();
 	}
@@ -290,15 +363,30 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 			return;
 
 		MoveListItem(ref entityConfigAsset.components, index, index - 1);
-		_selectedComponentId = index - 1;
+		for (int i = 0; i < _selectedComponents.Length; i++)
+			_selectedComponents[i] = i == index - 1;
 
 		RegenerateEditors();
 	}
 
-	private void OnMenuRemoveComponent(object userData)
+	private void OnMenuRemoveSelectedComponents()
 	{
-		var index = (int)userData;
-		entityConfigAsset.components.RemoveAt(index);
+		// var index = (int)userData;
+		// entityConfigAsset.components.RemoveAt(index);
+		// for (int i = 0; i < _selectedComponents.Length; i++)
+		// {
+		// 	if (_selectedComponents[i])
+		// 		entityConfigAsset.components.RemoveAt(i);
+		// }
+		for (int i=0; i<entityConfigAsset.components.Count; i++)
+		{
+			if (_selectedComponents[i])
+			{
+				_selectedComponents[i] = false;
+				entityConfigAsset.components.RemoveAt(i);
+				i--;
+			}
+		}
 		RegenerateEditors();
 	}
 	
@@ -322,6 +410,7 @@ public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
 		int editorCount = entityConfigAsset.components.Count;
 		editorInstance.editors = new Editor[editorCount];
 		_headerRects = new Rect[editorCount];
+		_selectedComponents = new bool[editorCount];
 
 		for (int i = 0; i < editorCount; i++)
 		{
