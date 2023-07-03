@@ -147,4 +147,9 @@ public static class EditorExt
 		EditorGUILayout.LabelField(label, options);
 		GUI.color = oldColor;
 	}
+
+	public static void DrawUnityEditorIcon(string iconName, params GUILayoutOption[] options)
+	{
+		GUILayout.Label(EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? $"d_{iconName}" : iconName), options);
+	}
 }
