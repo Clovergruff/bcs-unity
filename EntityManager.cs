@@ -6,6 +6,7 @@ public abstract class EntityManager<T> : MonoBehaviour where T : IEntity
 {
 	public List<T> allEntities;
 	public List<T> activeEntities = new List<T>();
+	public List<T> inactiveEntities = new List<T>();
 	public List<IEntityUpdate> activeUpdateEntities = new List<IEntityUpdate>();
 	public List<IEntityLateUpdate> activeLateUpdateEntities = new List<IEntityLateUpdate>();
 	public List<IEntityFixedUpdate> activeFixedUpdateEntities = new List<IEntityFixedUpdate>();
@@ -36,8 +37,11 @@ public abstract class EntityManager<T> : MonoBehaviour where T : IEntity
 			activeFixedUpdateEntities[i].OnFixedUpdate();
 	}
 
-	public virtual void DisableEntity(T entity)
+	public virtual void DisableEntity(T entity, bool disableForPooling = true)
 	{
+		if (disableForPooling && !inactiveEntities.Contains(entity))
+			inactiveEntities.Add(entity);
+
 		activeEntities.Remove(entity);
 
 		if (entity is IEntityUpdate entityUpdate) // && activeUpdateEntities.Contains(entityUpdate))
@@ -52,8 +56,9 @@ public abstract class EntityManager<T> : MonoBehaviour where T : IEntity
 
 	public virtual void RemoveEntity(T entity)
 	{
-		DisableEntity(entity);
+		DisableEntity(entity, false);
 		allEntities.Remove(entity);
+		inactiveEntities.Remove(entity);
 	}
 
 	public virtual void AddEntity(T entity)
@@ -66,6 +71,8 @@ public abstract class EntityManager<T> : MonoBehaviour where T : IEntity
 	{
 		if (!activeEntities.Contains(entity))
 			activeEntities.Add(entity);
+
+		inactiveEntities.Remove(entity);
 
 		if (entity is IEntityUpdate entityUpdate && !activeUpdateEntities.Contains(entityUpdate))
 			activeUpdateEntities.Add(entityUpdate);
