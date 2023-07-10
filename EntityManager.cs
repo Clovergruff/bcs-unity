@@ -29,6 +29,7 @@ public abstract class EntityManager<T> : MonoBehaviour where T : IEntity
 			activeLateUpdateEntities[i].OnLateUpdate();
 	}
 
+
 	protected virtual void FixedUpdate()
 	{
 		for (int i = 0; i < activeFixedUpdateEntities.Count; i++)
