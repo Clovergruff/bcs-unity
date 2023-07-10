@@ -1,6 +1,7 @@
 public interface IEntitySystem
 {
 	void LateSetup();
+	void ReusedSetup();
 }
 
 public interface ISystemUpdate
