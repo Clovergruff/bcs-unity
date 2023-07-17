@@ -1,0 +1,13 @@
+{
+  "name": "com.unity.gruffdev.bcs",
+  "displayName": "BCS",
+  "version": "1.0.0",
+  "description": "Basic Components and Systems",
+  "keywords": [
+    "unity",
+    "entities"
+    "components"
+    "systems"
+    "bcs"
+  ]
+}

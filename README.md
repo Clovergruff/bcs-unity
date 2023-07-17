@@ -1,4 +1,4 @@
-BCS Unity - The Basic Components an Systems plugin for Unity
+BCS Unity - The Basic Components and Systems plugin for Unity
 ===========================================
 
 This is the Unity plugin which handles generated BCS scripts.
