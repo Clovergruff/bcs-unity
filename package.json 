@@ -1,6 +1,6 @@
 {
-	"name": "com.unity.gruffdev.bcs",
-	"displayName": "BCS",
+	"name": "com.gruffdev.bcs",
+	"displayName": "bcs",
 	"version": "1.0.0",
 	"description": "Basic Components and Systems",
 	"author": {
