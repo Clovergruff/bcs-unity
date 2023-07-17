@@ -1,0 +1,10 @@
+{
+	"name": "com.unity.gruffdev.bcs",
+	"displayName": "BCS",
+	"version": "1.0.0",
+	"description": "Basic Components and Systems",
+	"author": {
+		"name": "CloverGruff",
+		"url": "https://github.com/Clovergruff/BCS-Unity"
+	}
+}
