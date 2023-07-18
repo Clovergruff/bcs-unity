@@ -1,26 +1,30 @@
 using UnityEditor;
+using Gruffdev.BCS;
 
-public class EntityComponentEditorBase<T> : Editor
-	where T : ConfigScriptableObject
+namespace Gruffdev.BCSEditor
 {
-	protected T config;
-
-	protected virtual void OnEnable()
+	public class EntityComponentEditorBase<T> : Editor
+		where T : ConfigScriptableObject
 	{
-		if (target != null)
-			config = (T)target;
-	}
+		protected T config;
 
-	public override void OnInspectorGUI()
-	{
-		using (var check = new EditorGUI.ChangeCheckScope())
+		protected virtual void OnEnable()
 		{
-			this.DrawDefaultInspectorWithoutScriptField();
+			if (target != null)
+				config = (T)target;
+		}
 
-			if (check.changed)
+		public override void OnInspectorGUI()
+		{
+			using (var check = new EditorGUI.ChangeCheckScope())
 			{
-				EditorUtility.SetDirty(config);
-				serializedObject.ApplyModifiedProperties();
+				this.DrawDefaultInspectorWithoutScriptField();
+
+				if (check.changed)
+				{
+					EditorUtility.SetDirty(config);
+					serializedObject.ApplyModifiedProperties();
+				}
 			}
 		}
 	}

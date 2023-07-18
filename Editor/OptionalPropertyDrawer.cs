@@ -1,41 +1,45 @@
 using UnityEditor;
 using UnityEngine;
+using Gruffdev.BCS;
 
-[CustomPropertyDrawer(typeof(Optional<>))]
-public class OptionalPropertyDrawer : PropertyDrawer
+namespace Gruffdev.BCSEditor
 {
-	private const float CHECKBOX_WIDTH = 20;
-
-	public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+	[CustomPropertyDrawer(typeof(Optional<>))]
+	public class OptionalPropertyDrawer : PropertyDrawer
 	{
-		var valueProperty = property.FindPropertyRelative("value");
-		return EditorGUI.GetPropertyHeight(valueProperty);
-	}
+		private const float CHECKBOX_WIDTH = 20;
 
-	public override void OnGUI(Rect position, SerializedProperty property, GUIContent label )
-	{
-		var valueProperty = property.FindPropertyRelative("value");
-		var toggleProperty = property.FindPropertyRelative("enabled");
-		float originalWidth = position.width;
+		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+		{
+			var valueProperty = property.FindPropertyRelative("value");
+			return EditorGUI.GetPropertyHeight(valueProperty);
+		}
 
-		// Value
-		EditorGUI.BeginProperty(position, label, property);
-		position.width -= CHECKBOX_WIDTH;
-		
-		EditorGUI.BeginDisabledGroup(!toggleProperty.boolValue);
-		EditorGUI.PropertyField(position, valueProperty, label, true);
-		EditorGUI.EndDisabledGroup();
+		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label )
+		{
+			var valueProperty = property.FindPropertyRelative("value");
+			var toggleProperty = property.FindPropertyRelative("enabled");
+			float originalWidth = position.width;
 
-		// Toggle checkbox
-		int oldIndentLevel = EditorGUI.indentLevel;
-		EditorGUI.indentLevel = 0;
+			// Value
+			EditorGUI.BeginProperty(position, label, property);
+			position.width -= CHECKBOX_WIDTH;
+			
+			EditorGUI.BeginDisabledGroup(!toggleProperty.boolValue);
+			EditorGUI.PropertyField(position, valueProperty, label, true);
+			EditorGUI.EndDisabledGroup();
 
-		position.x += originalWidth - CHECKBOX_WIDTH + 3; // Wtf?
-		position.width = CHECKBOX_WIDTH;
-		position.height = EditorGUI.GetPropertyHeight(toggleProperty);
+			// Toggle checkbox
+			int oldIndentLevel = EditorGUI.indentLevel;
+			EditorGUI.indentLevel = 0;
 
-		EditorGUI.PropertyField(position, toggleProperty, GUIContent.none);
-		EditorGUI.indentLevel = oldIndentLevel;
-		EditorGUI.EndProperty();
+			position.x += originalWidth - CHECKBOX_WIDTH + 3; // Wtf?
+			position.width = CHECKBOX_WIDTH;
+			position.height = EditorGUI.GetPropertyHeight(toggleProperty);
+
+			EditorGUI.PropertyField(position, toggleProperty, GUIContent.none);
+			EditorGUI.indentLevel = oldIndentLevel;
+			EditorGUI.EndProperty();
+		}
 	}
 }

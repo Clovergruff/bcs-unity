@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class GameEntityManager : EntityManager<GameEntity>
+namespace Gruffdev.BCS
 {
+	public abstract class GameEntityManager : EntityManager<GameEntity>
+	{
+	}
 }

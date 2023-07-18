@@ -1,7 +1,11 @@
 using UnityEngine;
 using UnityEditor;
+using Gruffdev.BCS;
 
-public class EntityConfigEditorInstance : ScriptableObject
+namespace Gruffdev.BCSEditor
 {
-    public Editor[] editors = new Editor[0];
+	public class EntityConfigEditorInstance : ScriptableObject
+	{
+		public Editor[] editors = new Editor[0];
+	}
 }
