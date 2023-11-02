@@ -71,6 +71,22 @@ namespace Gruffdev.BCSEditor
 			return foldout;
 		}
 
+		public static bool FoldoutHeader(string label, bool foldout)
+		{
+			if (foldout)
+			{
+				foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+			}
+			else
+			{
+				EditorGUI.BeginDisabledGroup(false);
+					foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+				EditorGUI.EndDisabledGroup();
+			}
+
+			return foldout;
+		}
+
 		public static T FoldoutObject<T>(string label, ref AnimBool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
 		{
 			EditorGUILayout.BeginHorizontal();
@@ -79,31 +95,49 @@ namespace Gruffdev.BCSEditor
 				obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
 			EditorGUILayout.EndHorizontal();
 
-			if (EditorGUILayout.BeginFadeGroup(foldout.faded))
-			{
-				if (obj == null)
-				{
-					EditorGUILayout.HelpBox("Null Object.", MessageType.Warning);
-				}
-				else
-				{
-					if (objEditor == null)
-					{
-						EditorGUILayout.HelpBox("Editor Not Initialized!", MessageType.Error);
-					}
-					else
-					{
-						BeginBoxGroup();
-						EditorGUI.indentLevel += indentAmount;
-							objEditor.OnInspectorGUI();
-						EditorGUI.indentLevel -= indentAmount;
-						EndBoxGroup();
-					}
-				}
-			}
+			if (foldout)
+				DrawFoldoutObjectContents(obj, objEditor, indentAmount);
 			EditorGUILayout.EndFadeGroup();
 
 			return (T)obj;
+		}
+
+		public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
+		{
+			EditorGUILayout.BeginHorizontal();
+				GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
+				foldout = FoldoutHeader(label, foldout);
+				obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
+			EditorGUILayout.EndHorizontal();
+
+			if (foldout)
+				DrawFoldoutObjectContents(obj, objEditor, indentAmount);
+			EditorGUILayout.EndFadeGroup();
+
+			return (T)obj;
+		}
+
+		private static void DrawFoldoutObjectContents(Object obj, Editor objEditor, int indentAmount)
+		{
+			if (obj == null)
+			{
+				EditorGUILayout.HelpBox("Null Object.", MessageType.Warning);
+			}
+			else
+			{
+				if (objEditor == null)
+				{
+					EditorGUILayout.HelpBox("Editor Not Initialized!", MessageType.Error);
+				}
+				else
+				{
+					BeginBoxGroup();
+					EditorGUI.indentLevel += indentAmount;
+					objEditor.OnInspectorGUI();
+					EditorGUI.indentLevel -= indentAmount;
+					EndBoxGroup();
+				}
+			}
 		}
 
 		public static T ObjectFieldWithPreview<T>(T obj, float previewSize) where T : UnityEngine.Object

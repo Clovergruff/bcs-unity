@@ -7,12 +7,7 @@ namespace Gruffdev.BCS
 	public abstract class EntityConfigAsset<T> : ScriptableObject
 	{
 	#if UNITY_EDITOR
-		[System.NonSerialized] public UnityEditor.AnimatedValues.AnimBool foldedOut = new UnityEditor.AnimatedValues.AnimBool
-		{
-			value = true,
-			target = true,
-			speed = 10f,
-		};
+		[System.NonSerialized] public bool foldedOut = true;
 	#endif
 
 		public List<T> components = new List<T>();

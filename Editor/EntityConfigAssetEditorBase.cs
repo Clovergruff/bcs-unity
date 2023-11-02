@@ -64,7 +64,7 @@ namespace Gruffdev.BCSEditor
 			}
 		}
 
-		protected void DrawComponentList()
+		public void DrawComponentList()
 		{
 			bool wasHoveringOnComponent = false;
 			var previousComponentEditMode = _componentEditMode;

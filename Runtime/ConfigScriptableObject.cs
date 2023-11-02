@@ -7,10 +7,7 @@ namespace Gruffdev.BCS
 		public virtual bool alwaysEnableFoldout {get;}
 		
 	#if UNITY_EDITOR
-		[HideInInspector] public UnityEditor.AnimatedValues.AnimBool foldedOut = new UnityEditor.AnimatedValues.AnimBool
-		{
-			speed = 10f,
-		};
+		[HideInInspector] public bool foldedOut;
 	#endif
 
 		public static bool IsComponentNull(ScriptableObject stackObject, ConfigScriptableObject configScriptableObject)
