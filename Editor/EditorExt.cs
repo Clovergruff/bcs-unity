@@ -95,7 +95,7 @@ namespace Gruffdev.BCSEditor
 				obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
 			EditorGUILayout.EndHorizontal();
 
-			if (foldout)
+			if (EditorGUILayout.BeginFadeGroup(foldout.faded))
 				DrawFoldoutObjectContents(obj, objEditor, indentAmount);
 			EditorGUILayout.EndFadeGroup();
 
@@ -112,7 +112,6 @@ namespace Gruffdev.BCSEditor
 
 			if (foldout)
 				DrawFoldoutObjectContents(obj, objEditor, indentAmount);
-			EditorGUILayout.EndFadeGroup();
 
 			return (T)obj;
 		}

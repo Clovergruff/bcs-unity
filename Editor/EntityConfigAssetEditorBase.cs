@@ -64,7 +64,7 @@ namespace Gruffdev.BCSEditor
 			}
 		}
 
-		public void DrawComponentList()
+		protected void DrawComponentList()
 		{
 			bool wasHoveringOnComponent = false;
 			var previousComponentEditMode = _componentEditMode;
@@ -84,7 +84,7 @@ namespace Gruffdev.BCSEditor
 
 					entityConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", entityConfigAsset.foldedOut);
 
-					if (EditorGUILayout.BeginFadeGroup(entityConfigAsset.foldedOut.faded))
+					if (foldedOut)
 					{
 						EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
@@ -144,7 +144,7 @@ namespace Gruffdev.BCSEditor
 									if (entityConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
 									{
 										canBeFoldedOut = true;
-										EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut.target, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
+										EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
 									}
 									else
 									{
@@ -269,8 +269,7 @@ namespace Gruffdev.BCSEditor
 								// Component Editor
 								if (entityConfigAsset.components[i] != null)
 								{
-									// if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut.)
-									if (EditorGUILayout.BeginFadeGroup(entityConfigAsset.components[i].foldedOut.faded))
+									if (foldedOut)
 									{
 										// EditorExt.BeginBoxGroup();
 										EditorGUI.indentLevel++;
@@ -278,7 +277,6 @@ namespace Gruffdev.BCSEditor
 										EditorGUI.indentLevel--;
 										// EditorExt.EndBoxGroup();
 									}
-									EditorGUILayout.EndFadeGroup();
 								}
 
 								if (check.changed)
@@ -331,7 +329,6 @@ namespace Gruffdev.BCSEditor
 
 						EditorExt.EndBoxGroup();
 					}
-					EditorGUILayout.EndFadeGroup();
 
 					if (_hoveringComponentId == -1 && Event.current.type == EventType.MouseDown)
 					{
@@ -402,7 +399,7 @@ namespace Gruffdev.BCSEditor
 				_selectedComponents[i] = index == i;
 		}
 
-		private void ToggleComponentFoldout(int i) => entityConfigAsset.components[i].foldedOut.target = !entityConfigAsset.components[i].foldedOut.target;
+		private void ToggleComponentFoldout(int i) => entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
 
 		private void OnMenuMoveComponentDown(object userData)
 		{
