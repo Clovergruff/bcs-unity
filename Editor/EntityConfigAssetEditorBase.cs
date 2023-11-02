@@ -64,7 +64,7 @@ namespace Gruffdev.BCSEditor
 			}
 		}
 
-		protected void DrawComponentList()
+		public void DrawComponentList()
 		{
 			bool wasHoveringOnComponent = false;
 			var previousComponentEditMode = _componentEditMode;
@@ -84,7 +84,7 @@ namespace Gruffdev.BCSEditor
 
 					entityConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", entityConfigAsset.foldedOut);
 
-					if (foldedOut)
+					if (entityConfigAsset.foldedOut)
 					{
 						EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
@@ -267,16 +267,11 @@ namespace Gruffdev.BCSEditor
 								}
 
 								// Component Editor
-								if (entityConfigAsset.components[i] != null)
+								if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut)
 								{
-									if (foldedOut)
-									{
-										// EditorExt.BeginBoxGroup();
-										EditorGUI.indentLevel++;
-											editor.OnInspectorGUI();
-										EditorGUI.indentLevel--;
-										// EditorExt.EndBoxGroup();
-									}
+									EditorGUI.indentLevel++;
+										editor.OnInspectorGUI();
+									EditorGUI.indentLevel--;
 								}
 
 								if (check.changed)
@@ -287,7 +282,6 @@ namespace Gruffdev.BCSEditor
 								_componentRects[i].yMax = GUILayoutUtility.GetLastRect().yMax;
 
 							EditorGUI.indentLevel--;
-							// EditorExt.EndBoxGroup();
 						}
 
 						GUILayout.Space(3);
