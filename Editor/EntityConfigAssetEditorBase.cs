@@ -237,7 +237,11 @@ namespace Gruffdev.BCSEditor
 								// if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 								GUILayout.Label("", GUILayout.MaxWidth(10), GUILayout.Height(HEADER_HEIGHT));
 								Rect closeButtonRect = GUILayoutUtility.GetLastRect();
+#if UNITY_6000_0_OR_NEWER
+								var closeImage = EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? "d_close" : "close").image;
+#else
 								var closeImage = EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? "d_winbtn_win_close" : "winbtn_win_close").image;
+#endif
 								closeButtonRect.x -= 4;
 								closeButtonRect.y = HEADER_HEIGHT * 0.5f - closeImage.height * 0.5f;
 								closeButtonRect.width = closeImage.width;
