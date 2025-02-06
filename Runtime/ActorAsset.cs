@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Gruffdev.BCS
 {
-	public abstract class EntityConfigAsset<T> : ScriptableObject
+	public abstract class ActorConfigAsset<T> : ScriptableObject
 	{
 	#if UNITY_EDITOR
 		[System.NonSerialized] public bool foldedOut = true;

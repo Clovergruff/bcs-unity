@@ -12,9 +12,9 @@ using Gruffdev.BCS;
 
 namespace Gruffdev.BCSEditor
 {
-	public abstract class EntityConfigAssetEditorBase<T1, T2> : Editor
+	public abstract class ActorConfigAssetEditorBase<T1, T2> : Editor
 		where T1 : ConfigScriptableObject
-		where T2 : EntityConfigAsset<T1>
+		where T2 : ActorConfigAsset<T1>
 	{
 		private readonly Color HEADER_EVEN_ID_COLOR = new Color(0, 0, 0, 0.1f);
 		private readonly Color HEADER_ODD_ID_COLOR = new Color(0, 0, 0, 0.05f);
@@ -29,11 +29,11 @@ namespace Gruffdev.BCSEditor
 		private readonly float HEADER_HEIGHT = 18;
 		private readonly int FOLDOUT_WIDTH = 13;
 
-		protected T2 entityConfigAsset;
+		protected T2 actorConfigAsset;
 		protected GUIStyle iconButtonStyle = new GUIStyle();
 		protected GUIStyle componentListStyle = new GUIStyle();
 
-		public EntityConfigEditorInstance editorInstance;
+		public ActorConfigEditorInstance editorInstance;
 
 		private static int _componentEditMode = 0;
 		private SerializedProperty _componentsProperty;
@@ -44,7 +44,7 @@ namespace Gruffdev.BCSEditor
 
 		protected virtual void OnEnable()
 		{
-			entityConfigAsset = (T2)target;
+			actorConfigAsset = (T2)target;
 
 			iconButtonStyle.normal.background = null;
 			iconButtonStyle.active.background = null;
@@ -82,9 +82,9 @@ namespace Gruffdev.BCSEditor
 					float oneLineHeight = EditorGUIUtility.singleLineHeight;
 					int editorCount = editorInstance.editors.Length;
 
-					entityConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", entityConfigAsset.foldedOut);
+					actorConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", actorConfigAsset.foldedOut);
 
-					if (entityConfigAsset.foldedOut)
+					if (actorConfigAsset.foldedOut)
 					{
 						EditorExt.BeginBoxGroup();
 						for (int i = 0; i < editorCount; i++)
@@ -133,7 +133,7 @@ namespace Gruffdev.BCSEditor
 
 								int oldIndentLevel = EditorGUI.indentLevel;
 								bool canBeFoldedOut = false;
-								bool nullComponent = entityConfigAsset.components[i] == null;
+								bool nullComponent = actorConfigAsset.components[i] == null;
 								float leftPadding = FOLDOUT_WIDTH + 3;
 								EditorGUI.indentLevel = 0;
 
@@ -141,10 +141,10 @@ namespace Gruffdev.BCSEditor
 								{
 									EditorGUI.BeginDisabledGroup(true);
 									var iterator = editor.serializedObject.GetIterator();
-									if (entityConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
+									if (actorConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
 									{
 										canBeFoldedOut = true;
-										EditorGUILayout.Toggle(entityConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
+										EditorGUILayout.Toggle(actorConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
 									}
 									else
 									{
@@ -165,7 +165,7 @@ namespace Gruffdev.BCSEditor
 								{
 									DrawMonochromeEditorIcon("ScriptableObject On Icon", GUILayout.Width(18), GUILayout.Height(HEADER_HEIGHT));
 									// EditorExt.DrawUnityEditorIcon("console.warnicon.sml", GUILayout.Width(18), GUILayout.Height(_headerHeight));
-									GUILayout.Label(entityConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(250), GUILayout.Height(HEADER_HEIGHT));
+									GUILayout.Label(actorConfigAsset.components[i].name, EditorStyles.boldLabel, GUILayout.MaxWidth(250), GUILayout.Height(HEADER_HEIGHT));
 								}
 
 								var buttonRect = GUILayoutUtility.GetLastRect();
@@ -232,7 +232,7 @@ namespace Gruffdev.BCSEditor
 									}
 								}
 
-								entityConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(entityConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(HEADER_HEIGHT));
+								actorConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(actorConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(HEADER_HEIGHT));
 
 								// if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 								GUILayout.Label("", GUILayout.MaxWidth(10), GUILayout.Height(HEADER_HEIGHT));
@@ -252,7 +252,7 @@ namespace Gruffdev.BCSEditor
 								// if (GUILayout.Button("EditorGUIUtility.IconContent("d_winbtn_win_close_a@2x")", GUIStyle.none, GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 								if (GUI.Button(closeButtonRect, "", GUIStyle.none))
 								{
-									entityConfigAsset.components.RemoveAt(i);
+									actorConfigAsset.components.RemoveAt(i);
 									RegenerateEditors();
 									return;
 								}
@@ -271,7 +271,7 @@ namespace Gruffdev.BCSEditor
 								}
 
 								// Component Editor
-								if (entityConfigAsset.components[i] != null && entityConfigAsset.components[i].foldedOut)
+								if (actorConfigAsset.components[i] != null && actorConfigAsset.components[i].foldedOut)
 								{
 									EditorGUI.indentLevel++;
 										editor.OnInspectorGUI();
@@ -354,7 +354,7 @@ namespace Gruffdev.BCSEditor
 
 								if (obj is T1 configAsset)
 								{
-									entityConfigAsset.components.Add(configAsset);
+									actorConfigAsset.components.Add(configAsset);
 									ApplyChanges();
 									componentsUpdated = true;
 								}
@@ -397,15 +397,15 @@ namespace Gruffdev.BCSEditor
 				_selectedComponents[i] = index == i;
 		}
 
-		private void ToggleComponentFoldout(int i) => entityConfigAsset.components[i].foldedOut = !entityConfigAsset.components[i].foldedOut;
+		private void ToggleComponentFoldout(int i) => actorConfigAsset.components[i].foldedOut = !actorConfigAsset.components[i].foldedOut;
 
 		private void OnMenuMoveComponentDown(object userData)
 		{
 			var index = (int)userData;
-			if (index == entityConfigAsset.components.Count - 1)
+			if (index == actorConfigAsset.components.Count - 1)
 				return;
 
-			MoveListItem(ref entityConfigAsset.components, index, index + 1);
+			MoveListItem(ref actorConfigAsset.components, index, index + 1);
 			for (int i = 0; i < _selectedComponents.Length; i++)
 				_selectedComponents[i] = i == index + 1; 
 
@@ -418,7 +418,7 @@ namespace Gruffdev.BCSEditor
 			if (index == 0)
 				return;
 
-			MoveListItem(ref entityConfigAsset.components, index, index - 1);
+			MoveListItem(ref actorConfigAsset.components, index, index - 1);
 			for (int i = 0; i < _selectedComponents.Length; i++)
 				_selectedComponents[i] = i == index - 1;
 
@@ -428,18 +428,18 @@ namespace Gruffdev.BCSEditor
 		private void OnMenuRemoveSelectedComponents()
 		{
 			// var index = (int)userData;
-			// entityConfigAsset.components.RemoveAt(index);
+			// actorConfigAsset.components.RemoveAt(index);
 			// for (int i = 0; i < _selectedComponents.Length; i++)
 			// {
 			// 	if (_selectedComponents[i])
-			// 		entityConfigAsset.components.RemoveAt(i);
+			// 		actorConfigAsset.components.RemoveAt(i);
 			// }
-			for (int i=0; i<entityConfigAsset.components.Count; i++)
+			for (int i=0; i<actorConfigAsset.components.Count; i++)
 			{
 				if (_selectedComponents[i])
 				{
 					_selectedComponents[i] = false;
-					entityConfigAsset.components.RemoveAt(i);
+					actorConfigAsset.components.RemoveAt(i);
 					i--;
 				}
 			}
@@ -449,12 +449,12 @@ namespace Gruffdev.BCSEditor
 		private void OnMenuSelectComponentAsset(object userData)
 		{
 			var index = (int)userData;
-			Selection.activeObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GetAssetPath(entityConfigAsset.components[index]));
+			Selection.activeObject = AssetDatabase.LoadAssetAtPath<ScriptableObject>(AssetDatabase.GetAssetPath(actorConfigAsset.components[index]));
 		}
 
 		private void OnMenuAddEmptyComponentField()
 		{
-			entityConfigAsset.components.Add(null);
+			actorConfigAsset.components.Add(null);
 			ApplyChanges();
 			RegenerateEditors();
 		}
@@ -463,7 +463,7 @@ namespace Gruffdev.BCSEditor
 		{
 			var path = (string)userData;
 			T1 asset = (T1)AssetDatabase.LoadAssetAtPath(path, typeof(T1));
-			entityConfigAsset.components.Add(asset);
+			actorConfigAsset.components.Add(asset);
 
 			ApplyChanges();
 			RegenerateEditors();
@@ -471,16 +471,16 @@ namespace Gruffdev.BCSEditor
 
 		private void ApplyChanges()
 		{
-			EditorUtility.SetDirty(entityConfigAsset);
+			EditorUtility.SetDirty(actorConfigAsset);
 			serializedObject.ApplyModifiedProperties();
 			_componentsProperty.serializedObject.Update();
 		}
 
 		private void RegenerateEditors()
 		{
-			editorInstance = (EntityConfigEditorInstance)ScriptableObject.CreateInstance(typeof(EntityConfigEditorInstance));
+			editorInstance = (ActorConfigEditorInstance)ScriptableObject.CreateInstance(typeof(ActorConfigEditorInstance));
 
-			int editorCount = entityConfigAsset.components.Count;
+			int editorCount = actorConfigAsset.components.Count;
 			editorInstance.editors = new Editor[editorCount];
 			_headerRects = new Rect[editorCount];
 			_componentRects = new Rect[editorCount];
@@ -488,10 +488,10 @@ namespace Gruffdev.BCSEditor
 
 			for (int i = 0; i < editorCount; i++)
 			{
-				if (entityConfigAsset.components[i] == null)
+				if (actorConfigAsset.components[i] == null)
 					continue;
 
-				editorInstance.editors[i] = Editor.CreateEditor(entityConfigAsset.components[i]);
+				editorInstance.editors[i] = Editor.CreateEditor(actorConfigAsset.components[i]);
 			}
 		}
 

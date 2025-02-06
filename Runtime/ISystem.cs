@@ -1,6 +1,6 @@
 namespace Gruffdev.BCS
 {
-	public interface IEntitySystem
+	public interface IActorSystem
 	{
 		void LateSetup();
 		void ReusedSetup();

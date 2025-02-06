@@ -1,20 +1,20 @@
 namespace Gruffdev.BCS
 {
-	public interface IEntity
+	public interface IActor
 	{
 	}
 
-	public interface IEntityUpdate
+	public interface IActorUpdate
 	{
 		public abstract void OnUpdate();
 	}
 
-	public interface IEntityLateUpdate
+	public interface IActorLateUpdate
 	{
 		public abstract void OnLateUpdate();
 	}
 
-	public interface IEntityFixedUpdate
+	public interface IActorFixedUpdate
 	{
 		public abstract void OnFixedUpdate();
 	}

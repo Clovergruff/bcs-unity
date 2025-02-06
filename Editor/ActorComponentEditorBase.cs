@@ -1,18 +1,17 @@
 using UnityEditor;
-using UnityEngine;
 using Gruffdev.BCS;
 
 namespace Gruffdev.BCSEditor
 {
-	public class EntitySystemEditorBase<T> : Editor
-		where T : MonoBehaviour
+	public class ActorComponentEditorBase<T> : Editor
+		where T : ConfigScriptableObject
 	{
-		protected T system;
+		protected T config;
 
 		protected virtual void OnEnable()
 		{
 			if (target != null)
-				system = (T)target;
+				config = (T)target;
 		}
 
 		public override void OnInspectorGUI()
@@ -20,6 +19,12 @@ namespace Gruffdev.BCSEditor
 			using (var check = new EditorGUI.ChangeCheckScope())
 			{
 				this.DrawDefaultInspectorWithoutScriptField();
+
+				if (check.changed)
+				{
+					EditorUtility.SetDirty(config);
+					serializedObject.ApplyModifiedProperties();
+				}
 			}
 		}
 	}

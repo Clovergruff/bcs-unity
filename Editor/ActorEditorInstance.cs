@@ -4,7 +4,7 @@ using Gruffdev.BCS;
 
 namespace Gruffdev.BCSEditor
 {
-	public class EntityConfigEditorInstance : ScriptableObject
+	public class ActorConfigEditorInstance : ScriptableObject
 	{
 		public Editor[] editors = new Editor[0];
 	}
