@@ -32,7 +32,11 @@ public void RemoveAlive()
 Setting up actor configuration
 ==============
 
-After classes are properly generated, component and actor scriptable objects can be created under `Create/Data/Animal/`. Component scriptable objects can then be added to an actor scriptable object to create a unique actor.
+After classes are properly generated, component and actor scriptable objects can be created under `Create/Data/Animal/` - Component Scriptable Object assets can then be added to an actor scriptable object to create a unique actor.
+
+Alternatively to creating separate assets for each of the components, you can also simply add a nested component to an actor by pressing the `AddComponent` button and choosing the desired component - this will nest the component scriptable object inside the actor scriptable object.
+
+Right clicking an added asset will also reveal options for `Extracting` or `Embedding` components, so if You're migrating from an older version of BCS-Unity, it's possible to select all of the components of an Actor Scriptable Object, and then embed all of them at once.
 
 Let's create a "Boomer the dog" actor!
 

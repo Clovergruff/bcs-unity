@@ -1,14 +1,12 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
 using System.Linq;
-using UnityEditor.AnimatedValues;
-using Random = UnityEngine.Random;
 using System.IO;
 using UnityEditor.Search;
 using Gruffdev.BCS;
+using System.Text;
 
 namespace Gruffdev.BCSEditor
 {
@@ -33,7 +31,7 @@ namespace Gruffdev.BCSEditor
 		protected GUIStyle iconButtonStyle = new GUIStyle();
 		protected GUIStyle componentListStyle = new GUIStyle();
 
-		public ActorConfigEditorInstance editorInstance;
+		public ActorConfigEditorInstance EditorInstance { get; private set; }
 
 		private static int _componentEditMode = 0;
 		private SerializedProperty _componentsProperty;
@@ -41,6 +39,8 @@ namespace Gruffdev.BCSEditor
 		private Rect[] _componentRects;
 		private int _hoveringComponentId = -1;
 		private bool[] _selectedComponents;
+
+		private Vector2 _oldMousePosition;
 
 		protected virtual void OnEnable()
 		{
@@ -80,7 +80,7 @@ namespace Gruffdev.BCSEditor
 			{
 				case 0:
 					float oneLineHeight = EditorGUIUtility.singleLineHeight;
-					int editorCount = editorInstance.editors.Length;
+					int editorCount = EditorInstance.editors.Length;
 
 					actorConfigAsset.foldedOut = EditorExt.FoldoutHeader("Components", actorConfigAsset.foldedOut);
 
@@ -91,7 +91,7 @@ namespace Gruffdev.BCSEditor
 						{
 							// EditorExt.BeginBoxGroup();
 							EditorGUI.indentLevel++;
-							Editor editor = editorInstance.editors[i];
+							Editor editor = EditorInstance.editors[i];
 
 							using (var check = new EditorGUI.ChangeCheckScope())
 							{
@@ -141,10 +141,10 @@ namespace Gruffdev.BCSEditor
 								{
 									EditorGUI.BeginDisabledGroup(true);
 									var iterator = editor.serializedObject.GetIterator();
-									if (actorConfigAsset.components[i].alwaysEnableFoldout || iterator.CountRemaining() > 1)
+									if (actorConfigAsset.components[i].EditorAlwaysEnableFoldout || iterator.CountRemaining() > 1)
 									{
 										canBeFoldedOut = true;
-										EditorGUILayout.Toggle(actorConfigAsset.components[i].foldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
+										EditorGUILayout.Toggle(actorConfigAsset.components[i].EditorFoldedOut, EditorStyles.foldout, GUILayout.Width(FOLDOUT_WIDTH), GUILayout.Height(HEADER_HEIGHT));
 									}
 									else
 									{
@@ -204,6 +204,8 @@ namespace Gruffdev.BCSEditor
 									}
 									else if (eventType == EventType.ContextClick)
 									{
+										_selectedComponents[i] = true;
+
 										GenericMenu menu = new GenericMenu();
 										int selectedComponentCount = 0;
 										foreach (var sel in _selectedComponents)
@@ -219,20 +221,62 @@ namespace Gruffdev.BCSEditor
 										else
 											menu.AddItem(new GUIContent("Move Down"), false, OnMenuMoveComponentDown, i);
 
-										// menu.AddSeparator("");
-										// menu.AddItem(new GUIContent("Select Asset"), false, OnMenuSelectComponentAsset, i);
 										menu.AddSeparator("");
-										if (selectedComponentCount > 1)
-											menu.AddItem(new GUIContent("Remove Components"), false, OnMenuRemoveSelectedComponents);
-										else
-											menu.AddItem(new GUIContent("Remove Component"), false, OnMenuRemoveSelectedComponents);
+										menu.AddItem(
+											new GUIContent(selectedComponentCount > 1 ? "Remove Components" : "Remove Component"),
+											false,
+											OnMenuRemoveSelectedComponents
+										);
+
+										bool hasNestedComponents = false;
+										bool hasAssetComponents = false;
+
+										for (int si = 0; si < _selectedComponents.Length; si++)
+										{
+											if (!_selectedComponents[si])
+												continue;
+
+											bool isNested = AssetDatabase.IsSubAsset(actorConfigAsset.components[si].GetInstanceID());
+
+											if (isNested)
+												hasNestedComponents = true;
+											else
+												hasAssetComponents = true;
+										}
+
+										if (hasNestedComponents)
+										{
+											menu.AddItem(
+												new GUIContent(selectedComponentCount > 1 ? "Extract Components" : "Extract Component"),
+												false,
+												OnMenuExtractSelectedComponents
+											);
+										}
+
+										if (hasAssetComponents)
+										{
+											menu.AddItem(
+												new GUIContent(selectedComponentCount > 1 ? "Embed Components" : "Embed Component"),
+												false,
+												OnMenuNestSelectedComponents
+											);
+										}
+
 										menu.ShowAsContext();
 
 										current.Use(); 
 									}
 								}
 
-								actorConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(actorConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(HEADER_HEIGHT));
+								T1 comp = actorConfigAsset.components[i];
+								if (comp != null && AssetDatabase.IsSubAsset(comp.GetInstanceID()))
+								{
+									EditorGUILayout.Space();
+								}
+								else
+								{
+									actorConfigAsset.components[i] = (T1)EditorGUILayout.ObjectField(actorConfigAsset.components[i], typeof(T1), false, GUILayout.ExpandWidth(true), GUILayout.Height(HEADER_HEIGHT));
+								}
 
 								// if (GUILayout.Button("-", GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 								GUILayout.Label("", GUILayout.MaxWidth(10), GUILayout.Height(HEADER_HEIGHT));
@@ -252,8 +296,7 @@ namespace Gruffdev.BCSEditor
 								// if (GUILayout.Button("EditorGUIUtility.IconContent("d_winbtn_win_close_a@2x")", GUIStyle.none, GUILayout.Width(oneLineHeight), GUILayout.ExpandHeight(true)))
 								if (GUI.Button(closeButtonRect, "", GUIStyle.none))
 								{
-									actorConfigAsset.components.RemoveAt(i);
-									RegenerateEditors();
+									RemoveComponentAt(i);
 									return;
 								}
 								EditorGUI.indentLevel = oldIndentLevel;
@@ -271,7 +314,7 @@ namespace Gruffdev.BCSEditor
 								}
 
 								// Component Editor
-								if (actorConfigAsset.components[i] != null && actorConfigAsset.components[i].foldedOut)
+								if (actorConfigAsset.components[i] != null && actorConfigAsset.components[i].EditorFoldedOut)
 								{
 									EditorGUI.indentLevel++;
 										editor.OnInspectorGUI();
@@ -295,18 +338,16 @@ namespace Gruffdev.BCSEditor
 						GUILayout.FlexibleSpace();
 						if (GUILayout.Button("Add Component", GUILayout.Width(200), GUILayout.Height(oneLineHeight + 6)))
 						{
-							var paths = GetAllScriptableObjectPaths();
+							string[] paths = GetAllScriptableObjectPaths();
 
 							GenericMenu menu = new GenericMenu();
 
 							menu.AddItem(new GUIContent("Empty"), false, OnMenuAddEmptyComponentField);
-
-							menu.AddSeparator("");
 							
 							foreach (var path in paths)
 							{
-								var filename = Path.GetFileNameWithoutExtension(path);
-								var words = SearchUtils.SplitCamelCase(filename).ToList();
+								string filename = Path.GetFileNameWithoutExtension(path);
+								List<string> words = SearchUtils.SplitCamelCase(filename).ToList();
 								
 								if (words.Count > 1)
 								{
@@ -315,8 +356,39 @@ namespace Gruffdev.BCSEditor
 									filename = $"{category}/{String.Join("", words)}";
 								}
 
-								menu.AddItem(new GUIContent(filename), false, OnMenuAddExistingComponent, path);
+								menu.AddItem(new GUIContent($"Project/{filename}"), false, OnMenuAddExistingComponent, path);
 							}
+
+							menu.AddSeparator("");
+
+							Type[] derivedTypes = AppDomain.CurrentDomain.GetAssemblies()
+								.SelectMany(domainAssembly => domainAssembly.GetTypes())
+								.Where(type => typeof(T1).IsAssignableFrom(type)
+								).ToArray();
+
+							foreach (Type comp in derivedTypes)
+							{
+								bool componentAlreadyExists = false;
+								foreach (T1 existingComponent in actorConfigAsset.components)
+								{
+									if (existingComponent.GetType() == comp)
+									{
+										componentAlreadyExists = true;
+										break;
+									}
+								}
+
+								string compName = GetShortComponentName(comp);
+
+								if (compName == "Component")
+									continue;
+
+								if (componentAlreadyExists)
+									menu.AddDisabledItem(new GUIContent(compName));
+								else
+									menu.AddItem(new GUIContent(compName), false, OnMenuCreateNestedComponent, comp);
+							}
+
 							menu.ShowAsContext();
 							Event.current.Use(); 
 						}
@@ -366,7 +438,9 @@ namespace Gruffdev.BCSEditor
 					}
 				break;
 				case 1:
+					EditorGUI.indentLevel++;
 					EditorGUILayout.PropertyField(_componentsProperty);
+					EditorGUI.indentLevel--;
 				break;
 			}
 
@@ -375,7 +449,66 @@ namespace Gruffdev.BCSEditor
 			if (!wasHoveringOnComponent && Event.current.type == EventType.Repaint)
 				_hoveringComponentId = -1;
 
-			Repaint();
+			if (Event.current.type == EventType.MouseDrag ||
+				Event.current.type == EventType.MouseMove ||
+				Event.current.type == EventType.MouseDown ||
+				Event.current.type == EventType.MouseUp ||
+				Event.current.type == EventType.MouseEnterWindow ||
+				Event.current.type == EventType.MouseLeaveWindow ||
+				Event.current.type == EventType.Repaint ||
+				Event.current.mousePosition != _oldMousePosition)
+			{
+				Repaint();
+			}
+
+			_oldMousePosition = Event.current.mousePosition;
+		}
+
+		private void RemoveComponentAt(int index) => RemoveComponent(actorConfigAsset.components[index]);
+
+		private void RemoveComponent(T1 component)
+		{
+			actorConfigAsset.components.Remove(component);
+
+			if (AssetDatabase.IsSubAsset(component.GetInstanceID()))
+			{
+				// Undo.DestroyObjectImmediate(component);
+				DestroyImmediate(component, true);
+				AssetDatabase.SaveAssets();
+			}
+			
+			RegenerateEditors();
+		}
+
+		private string GetShortComponentName(Type comp)
+		{
+			string compName = comp.ToString();
+			string actorTypeName = typeof(T1).ToString();
+			actorTypeName = actorTypeName.Remove(actorTypeName.Length - 15, 15);
+			compName = compName.Remove(compName.Length - 6, 6).Remove(0, actorTypeName.Length);
+			compName = UnPascalCase(compName);
+			return compName;
+		}
+
+		public string UnPascalCase(string text)
+		{
+			if (string.IsNullOrWhiteSpace(text))
+				return "";
+
+			var newText = new StringBuilder(text.Length * 2);
+			newText.Append(text[0]);
+
+			for (int i = 1; i < text.Length; i++)
+			{
+				var currentUpper = char.IsUpper(text[i]);
+				var prevUpper = char.IsUpper(text[i - 1]);
+				var nextUpper = (text.Length > i + 1) ? char.IsUpper(text[i + 1]) || char.IsWhiteSpace(text[i + 1]): prevUpper;
+				var spaceExists = char.IsWhiteSpace(text[i - 1]);
+				if (currentUpper && !spaceExists && (!nextUpper || !prevUpper))
+						newText.Append(' ');
+				newText.Append(text[i]);
+			}
+			return newText.ToString();
 		}
 
 		private string[] GetAllScriptableObjectPaths()
@@ -397,7 +530,7 @@ namespace Gruffdev.BCSEditor
 				_selectedComponents[i] = index == i;
 		}
 
-		private void ToggleComponentFoldout(int i) => actorConfigAsset.components[i].foldedOut = !actorConfigAsset.components[i].foldedOut;
+		private void ToggleComponentFoldout(int i) => actorConfigAsset.components[i].EditorFoldedOut = !actorConfigAsset.components[i].EditorFoldedOut;
 
 		private void OnMenuMoveComponentDown(object userData)
 		{
@@ -409,6 +542,7 @@ namespace Gruffdev.BCSEditor
 			for (int i = 0; i < _selectedComponents.Length; i++)
 				_selectedComponents[i] = i == index + 1; 
 
+			ApplyChanges();
 			RegenerateEditors();
 		}
 
@@ -422,6 +556,7 @@ namespace Gruffdev.BCSEditor
 			for (int i = 0; i < _selectedComponents.Length; i++)
 				_selectedComponents[i] = i == index - 1;
 
+			ApplyChanges();
 			RegenerateEditors();
 		}
 
@@ -434,7 +569,7 @@ namespace Gruffdev.BCSEditor
 			// 	if (_selectedComponents[i])
 			// 		actorConfigAsset.components.RemoveAt(i);
 			// }
-			for (int i=0; i<actorConfigAsset.components.Count; i++)
+			for (int i = 0; i < actorConfigAsset.components.Count; i++)
 			{
 				if (_selectedComponents[i])
 				{
@@ -443,6 +578,65 @@ namespace Gruffdev.BCSEditor
 					i--;
 				}
 			}
+
+			ApplyChanges();
+			RegenerateEditors();
+		}
+
+		private void OnMenuNestSelectedComponents()
+		{
+			for (int i = 0; i < actorConfigAsset.components.Count; i++)
+			{
+				if (_selectedComponents[i])
+				{
+					T1 component = actorConfigAsset.components[i];
+					int assetInstanceId = component.GetInstanceID();
+
+					if (AssetDatabase.IsSubAsset(assetInstanceId))
+						continue;
+
+					T1 nestedComponent = Instantiate(component);
+					nestedComponent.name = component.name;
+
+					AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(assetInstanceId));
+					AssetDatabase.AddObjectToAsset(nestedComponent, actorConfigAsset);
+					AssetDatabase.SaveAssets();
+
+
+					actorConfigAsset.components[i] = nestedComponent;
+				}
+			}
+
+			AssetDatabase.Refresh();
+
+			ApplyChanges();
+			RegenerateEditors();
+		}
+
+		private void OnMenuExtractSelectedComponents()
+		{
+			string mainAssetPath = AssetDatabase.GetAssetPath(actorConfigAsset.GetInstanceID());
+
+			for (int i = 0; i < actorConfigAsset.components.Count; i++)
+			{
+				if (_selectedComponents[i])
+				{
+					T1 component = actorConfigAsset.components[i];
+
+					if (!AssetDatabase.IsSubAsset(component.GetInstanceID()))
+						continue;
+
+					AssetDatabase.RemoveObjectFromAsset(component);
+					AssetDatabase.SaveAssets();
+					AssetDatabase.CreateAsset(component,
+						$"{Path.GetDirectoryName(mainAssetPath)}/{component.name}.asset");
+					AssetDatabase.SaveAssets();
+				}
+			}
+			
+			AssetDatabase.Refresh();
+
+			ApplyChanges();
 			RegenerateEditors();
 		}
 		
@@ -463,6 +657,26 @@ namespace Gruffdev.BCSEditor
 		{
 			var path = (string)userData;
 			T1 asset = (T1)AssetDatabase.LoadAssetAtPath(path, typeof(T1));
+
+			if (AssetDatabase.IsSubAsset(asset.GetInstanceID()))
+				return;
+
+			actorConfigAsset.components.Add(asset);
+
+			ApplyChanges();
+			RegenerateEditors();
+		}
+
+		private void OnMenuCreateNestedComponent(object userData)
+		{
+			Type componentType = (Type)userData;
+			T1 asset = (T1)CreateInstance((Type)userData);
+			asset.name = GetShortComponentName(componentType);
+			// asset.editorAssetIsNested = true;
+
+			AssetDatabase.AddObjectToAsset(asset, actorConfigAsset);
+			AssetDatabase.SaveAssets();
+
 			actorConfigAsset.components.Add(asset);
 
 			ApplyChanges();
@@ -474,14 +688,24 @@ namespace Gruffdev.BCSEditor
 			EditorUtility.SetDirty(actorConfigAsset);
 			serializedObject.ApplyModifiedProperties();
 			_componentsProperty.serializedObject.Update();
+
 		}
 
 		private void RegenerateEditors()
 		{
-			editorInstance = (ActorConfigEditorInstance)ScriptableObject.CreateInstance(typeof(ActorConfigEditorInstance));
-
 			int editorCount = actorConfigAsset.components.Count;
-			editorInstance.editors = new Editor[editorCount];
+
+			if (EditorInstance)
+			{
+				for (int i = 0; i < EditorInstance.editors.Length; i++)
+					DestroyImmediate(EditorInstance.editors[i]);
+
+				DestroyImmediate(EditorInstance);
+			}
+
+			EditorInstance = (ActorConfigEditorInstance)ScriptableObject.CreateInstance(typeof(ActorConfigEditorInstance));
+
+			EditorInstance.editors = new Editor[editorCount];
 			_headerRects = new Rect[editorCount];
 			_componentRects = new Rect[editorCount];
 			_selectedComponents = new bool[editorCount];
@@ -491,7 +715,7 @@ namespace Gruffdev.BCSEditor
 				if (actorConfigAsset.components[i] == null)
 					continue;
 
-				editorInstance.editors[i] = Editor.CreateEditor(actorConfigAsset.components[i]);
+				EditorInstance.editors[i] = Editor.CreateEditor(actorConfigAsset.components[i]);
 			}
 		}
 

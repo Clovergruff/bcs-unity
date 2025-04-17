@@ -10,6 +10,6 @@ namespace Gruffdev.BCS
 		[System.NonSerialized] public bool foldedOut = true;
 	#endif
 
-		public List<T> components = new List<T>();
+		public List<T> components = new();
 	}
 }
