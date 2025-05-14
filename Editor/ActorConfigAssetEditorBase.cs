@@ -40,8 +40,6 @@ namespace Gruffdev.BCSEditor
 		private int _hoveringComponentId = -1;
 		private bool[] _selectedComponents;
 
-		private Vector2 _oldMousePosition;
-
 		protected virtual void OnEnable()
 		{
 			actorConfigAsset = (T2)target;
@@ -449,19 +447,17 @@ namespace Gruffdev.BCSEditor
 			if (!wasHoveringOnComponent && Event.current.type == EventType.Repaint)
 				_hoveringComponentId = -1;
 
+			Vector2 mousePosition = Event.current.mousePosition;
+
 			if (Event.current.type == EventType.MouseDrag ||
 				Event.current.type == EventType.MouseMove ||
 				Event.current.type == EventType.MouseDown ||
 				Event.current.type == EventType.MouseUp ||
 				Event.current.type == EventType.MouseEnterWindow ||
-				Event.current.type == EventType.MouseLeaveWindow ||
-				Event.current.type == EventType.Repaint ||
-				Event.current.mousePosition != _oldMousePosition)
+				Event.current.type == EventType.MouseLeaveWindow)
 			{
 				Repaint();
 			}
-
-			_oldMousePosition = Event.current.mousePosition;
 		}
 
 		private void RemoveComponentAt(int index) => RemoveComponent(actorConfigAsset.components[index]);
@@ -470,7 +466,7 @@ namespace Gruffdev.BCSEditor
 		{
 			actorConfigAsset.components.Remove(component);
 
-			if (AssetDatabase.IsSubAsset(component.GetInstanceID()))
+			if (component != null && AssetDatabase.IsSubAsset(component.GetInstanceID()))
 			{
 				// Undo.DestroyObjectImmediate(component);
 				DestroyImmediate(component, true);
@@ -689,22 +685,16 @@ namespace Gruffdev.BCSEditor
 			serializedObject.ApplyModifiedProperties();
 			_componentsProperty.serializedObject.Update();
 
+			Repaint();
 		}
 
 		private void RegenerateEditors()
 		{
-			int editorCount = actorConfigAsset.components.Count;
-
-			if (EditorInstance)
-			{
-				for (int i = 0; i < EditorInstance.editors.Length; i++)
-					DestroyImmediate(EditorInstance.editors[i]);
-
-				DestroyImmediate(EditorInstance);
-			}
+			ClearEditors();
 
 			EditorInstance = (ActorConfigEditorInstance)ScriptableObject.CreateInstance(typeof(ActorConfigEditorInstance));
 
+			int editorCount = actorConfigAsset.components.Count;
 			EditorInstance.editors = new Editor[editorCount];
 			_headerRects = new Rect[editorCount];
 			_componentRects = new Rect[editorCount];
@@ -717,6 +707,19 @@ namespace Gruffdev.BCSEditor
 
 				EditorInstance.editors[i] = Editor.CreateEditor(actorConfigAsset.components[i]);
 			}
+
+			Repaint();
+		}
+
+		public void ClearEditors()
+		{
+			if (!EditorInstance)
+				return;
+
+			for (int i = 0; i < EditorInstance.editors.Length; i++)
+				DestroyImmediate(EditorInstance.editors[i]);
+
+			DestroyImmediate(EditorInstance);
 		}
 
 		public void MoveListItem<T>(ref List<T> list, int oldIndex, int newIndex)
