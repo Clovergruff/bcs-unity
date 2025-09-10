@@ -6,13 +6,15 @@ namespace Gruffdev.BCS
 	[Serializable]
 	public struct Optional<T>
 	{
-		[SerializeField] public bool enabled;
-		[SerializeField] public T value;
+		[SerializeField]
+		public bool Enabled { get; private set; }
+		[SerializeField]
+		public T Value { get; private set; }
 
 		public Optional(T initialValue, bool enabled = true)
 		{
-			this.enabled = enabled;
-			value = initialValue;
+			Enabled = enabled;
+			Value = initialValue;
 		}
 	}
 }
