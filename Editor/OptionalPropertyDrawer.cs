@@ -11,14 +11,14 @@ namespace Gruffdev.BCSEditor
 
 		public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
 		{
-			var valueProperty = property.FindPropertyRelative("value");
+			var valueProperty = property.FindPropertyRelative("<Value>k__BackingField");
 			return EditorGUI.GetPropertyHeight(valueProperty);
 		}
 
 		public override void OnGUI(Rect position, SerializedProperty property, GUIContent label )
 		{
-			var valueProperty = property.FindPropertyRelative("value");
-			var toggleProperty = property.FindPropertyRelative("enabled");
+			var valueProperty = property.FindPropertyRelative("<Value>k__BackingField");
+			var toggleProperty = property.FindPropertyRelative("<Enabled>k__BackingField");
 			float originalWidth = position.width;
 
 			// Value
