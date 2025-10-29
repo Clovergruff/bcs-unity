@@ -9,9 +9,9 @@ namespace Gruffdev.BCSEditor
 	{
 		public static int INDENTATION_WIDTH = 16;
 		private static GUIStyle OBJECT_FIELD_PREVIEW_STYLE = new GUIStyle(GUI.skin.button)
-			{
-				padding = new RectOffset(2, 2, 2, 2)
-			};
+		{
+			padding = new RectOffset(2, 2, 2, 2)
+		};
 
 		private static List<int> indentations = new List<int>();
 
@@ -20,7 +20,7 @@ namespace Gruffdev.BCSEditor
 			EditorGUI.BeginChangeCheck();
 
 			inspector.serializedObject.Update();
-			
+
 			SerializedProperty iterator = inspector.serializedObject.GetIterator();
 			iterator.NextVisible(true);
 
@@ -64,35 +64,35 @@ namespace Gruffdev.BCSEditor
 			else
 			{
 				EditorGUI.BeginDisabledGroup(false);
-					foldout.target = GUILayout.Toggle(foldout.target, label, EditorStyles.foldoutHeader);
+				foldout.target = GUILayout.Toggle(foldout.target, label, EditorStyles.foldoutHeader);
 				EditorGUI.EndDisabledGroup();
 			}
 
 			return foldout;
 		}
 
-		public static bool FoldoutHeader(string label, bool foldout)
+		public static bool FoldoutHeader(string label, bool foldout, params GUILayoutOption[] options)
 		{
 			if (foldout)
 			{
-				foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+				foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader, options);
 			}
 			else
 			{
 				EditorGUI.BeginDisabledGroup(false);
-					foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader);
+				foldout = GUILayout.Toggle(foldout, label, EditorStyles.foldoutHeader, options);
 				EditorGUI.EndDisabledGroup();
 			}
 
 			return foldout;
 		}
 
-		public static T FoldoutObject<T>(string label, ref AnimBool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
+		public static T FoldoutObject<T>(string label, ref AnimBool foldout, Object obj, Editor objEditor, int indentAmount = 1, params GUILayoutOption[] options) where T : Object
 		{
 			EditorGUILayout.BeginHorizontal();
-				GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
-				foldout = FoldoutHeader(label, foldout);
-				obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
+			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
+			foldout = FoldoutHeader(label, foldout);
+			obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false, options);
 			EditorGUILayout.EndHorizontal();
 
 			if (EditorGUILayout.BeginFadeGroup(foldout.faded))
@@ -102,18 +102,46 @@ namespace Gruffdev.BCSEditor
 			return (T)obj;
 		}
 
-		public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1) where T : Object
+		public static T FoldoutObject<T>(string label, ref bool foldout, Object obj, Editor objEditor, int indentAmount = 1, params GUILayoutOption[] options) where T : Object
 		{
 			EditorGUILayout.BeginHorizontal();
-				GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
-				foldout = FoldoutHeader(label, foldout);
-				obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false);
+			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
+			foldout = FoldoutHeader(label, foldout);
+			obj = (T)EditorGUILayout.ObjectField(obj, typeof(T), allowSceneObjects: false, options);
 			EditorGUILayout.EndHorizontal();
 
 			if (foldout)
 				DrawFoldoutObjectContents(obj, objEditor, indentAmount);
 
 			return (T)obj;
+		}
+
+		public static void FoldoutObject(ref bool foldout, SerializedProperty objProperty, Editor objEditor, GUIContent label, int indentAmount = 1, params GUILayoutOption[] options)
+		{
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
+
+			foldout = FoldoutHeader("", foldout, GUILayout.Width(16));
+
+			EditorGUILayout.PropertyField(objProperty, label, options);
+			EditorGUILayout.EndHorizontal();
+
+			if (foldout)
+				DrawFoldoutObjectContents(objProperty.objectReferenceValue, objEditor, indentAmount);
+		}
+		
+		public static void FoldoutObject(ref bool foldout, SerializedProperty objProperty, Editor objEditor, int indentAmount = 1, params GUILayoutOption[] options)
+		{
+			EditorGUILayout.BeginHorizontal();
+			GUILayout.Space(EditorGUI.indentLevel * INDENTATION_WIDTH - INDENTATION_WIDTH);
+
+			foldout = FoldoutHeader("", foldout, GUILayout.Width(16));
+
+			EditorGUILayout.PropertyField(objProperty, options);
+			EditorGUILayout.EndHorizontal();
+
+			if (foldout)
+				DrawFoldoutObjectContents(objProperty.objectReferenceValue, objEditor, indentAmount);
 		}
 
 		private static void DrawFoldoutObjectContents(Object obj, Editor objEditor, int indentAmount)
@@ -144,9 +172,9 @@ namespace Gruffdev.BCSEditor
 			if (obj != null)
 			{
 				GameObject go = (GameObject)obj.GetType().GetProperty("gameObject").GetValue(obj, null);
-				return ObjectFieldWithPreview<T>(obj, AssetPreview.GetAssetPreview(go), previewSize); 
+				return ObjectFieldWithPreview<T>(obj, AssetPreview.GetAssetPreview(go), previewSize);
 			}
-			return ObjectFieldWithPreview<T>(obj, null, previewSize); 
+			return ObjectFieldWithPreview<T>(obj, null, previewSize);
 		}
 
 		public static T ObjectFieldWithPreview<T>(T obj, Texture2D previewTexture, float previewSize) where T : UnityEngine.Object
@@ -185,6 +213,138 @@ namespace Gruffdev.BCSEditor
 		public static void DrawUnityEditorIcon(string iconName, params GUILayoutOption[] options)
 		{
 			GUILayout.Label(EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? $"d_{iconName}" : iconName), options);
+		}
+
+		public static LayerMask LayerMaskField(string label, LayerMask selected)
+		{
+			return LayerMaskField(label, selected, true);
+		}
+
+		public static LayerMask LayerMaskField(string label, LayerMask selected, bool showSpecial)
+		{
+
+			List<string> layers = new List<string>();
+			List<int> layerNumbers = new List<int>();
+
+			string selectedLayers = "";
+
+			for (int i = 0; i < 32; i++)
+			{
+
+				string layerName = LayerMask.LayerToName(i);
+
+				if (layerName != "")
+				{
+					if (selected == (selected | (1 << i)))
+					{
+
+						if (selectedLayers == "")
+						{
+							selectedLayers = layerName;
+						}
+						else
+						{
+							selectedLayers = "Mixed";
+						}
+					}
+				}
+			}
+
+			EventType lastEvent = Event.current.type;
+
+			if (Event.current.type != EventType.MouseDown && Event.current.type != EventType.ExecuteCommand)
+			{
+				if (selected.value == 0)
+				{
+					layers.Add("Nothing");
+				}
+				else if (selected.value == -1)
+				{
+					layers.Add("Everything");
+				}
+				else
+				{
+					layers.Add(selectedLayers);
+				}
+				layerNumbers.Add(-1);
+			}
+
+			if (showSpecial)
+			{
+				layers.Add((selected.value == 0 ? "[X] " : "     ") + "Nothing");
+				layerNumbers.Add(-2);
+
+				layers.Add((selected.value == -1 ? "[X] " : "     ") + "Everything");
+				layerNumbers.Add(-3);
+			}
+
+			for (int i = 0; i < 32; i++)
+			{
+
+				string layerName = LayerMask.LayerToName(i);
+
+				if (layerName != "")
+				{
+					if (selected == (selected | (1 << i)))
+					{
+						layers.Add("[X] " + layerName);
+					}
+					else
+					{
+						layers.Add("     " + layerName);
+					}
+					layerNumbers.Add(i);
+				}
+			}
+
+			bool preChange = GUI.changed;
+
+			GUI.changed = false;
+
+			int newSelected = 0;
+
+			if (Event.current.type == EventType.MouseDown)
+			{
+				newSelected = -1;
+			}
+
+			newSelected = EditorGUILayout.Popup(label, newSelected, layers.ToArray(), EditorStyles.layerMaskField);
+
+			if (GUI.changed && newSelected >= 0)
+			{
+				//newSelected -= 1;
+
+				Debug.Log(lastEvent + " " + newSelected + " " + layerNumbers[newSelected]);
+
+				if (showSpecial && newSelected == 0)
+				{
+					selected = 0;
+				}
+				else if (showSpecial && newSelected == 1)
+				{
+					selected = -1;
+				}
+				else
+				{
+
+					if (selected == (selected | (1 << layerNumbers[newSelected])))
+					{
+						selected &= ~(1 << layerNumbers[newSelected]);
+						//Debug.Log ("Set Layer "+LayerMask.LayerToName (LayerNumbers[newSelected]) + " To False "+selected.value);
+					}
+					else
+					{
+						//Debug.Log ("Set Layer "+LayerMask.LayerToName (LayerNumbers[newSelected]) + " To True "+selected.value);
+						selected = selected | (1 << layerNumbers[newSelected]);
+					}
+				}
+			}
+			else
+			{
+				GUI.changed = preChange;
+			}
+
+			return selected;
 		}
 	}
 }
